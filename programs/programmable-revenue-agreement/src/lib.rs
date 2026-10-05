@@ -15,11 +15,7 @@ declare_id!("2iEFwZ8qPjvEfSAtHqE7G7apQo9tVKFsiLrdAFC5sXop");
 pub mod programmable_revenue_agreement {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        crate::instructions::initialize::handle_initialize(ctx)
-    }
-
-    pub fn increment(ctx: Context<Increment>) -> Result<()> {
-        crate::instructions::increment::handle_increment(ctx)
+    pub fn initialize_agreement(ctx: Context<InitializeAgreement>) -> Result<()> {
+        ctx.accounts.initialize()
     }
 }
