@@ -31,7 +31,6 @@ pub mod programmable_revenue_agreement {
     ) -> Result<()> {
         let config_bump = ctx.bumps.agreement_config;
         let vault_bump = ctx.bumps.vault;
-        let treasury_bump = ctx.bumps.treasury;
         ctx.accounts.initialize(
             agreement_id,
             supply,
@@ -46,7 +45,6 @@ pub mod programmable_revenue_agreement {
             payment_destination,
             config_bump,
             vault_bump,
-            treasury_bump,
         )
     }
 }
