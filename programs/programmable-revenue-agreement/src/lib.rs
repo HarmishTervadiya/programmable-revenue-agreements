@@ -15,7 +15,38 @@ declare_id!("2iEFwZ8qPjvEfSAtHqE7G7apQo9tVKFsiLrdAFC5sXop");
 pub mod programmable_revenue_agreement {
     use super::*;
 
-    pub fn initialize_agreement(ctx: Context<InitializeAgreement>) -> Result<()> {
-        ctx.accounts.initialize()
+    pub fn initialize_agreement(
+        ctx: Context<InitializeAgreement>,
+        agreement_id: u64,
+        supply: u64,
+        share_price: u64,
+        access_mode: AccessMode,
+        tiers: Vec<TierInput>,
+        start_time: Option<i64>,
+        exp_time: Option<i64>,
+        end_cap: Option<u64>,
+        depositor: Pubkey,
+        compliance_admin: Pubkey,
+        payment_destination: Pubkey,
+    ) -> Result<()> {
+        let config_bump = ctx.bumps.agreement_config;
+        let vault_bump = ctx.bumps.vault;
+        let treasury_bump = ctx.bumps.treasury;
+        ctx.accounts.initialize(
+            agreement_id,
+            supply,
+            share_price,
+            access_mode,
+            tiers,
+            start_time,
+            exp_time,
+            end_cap,
+            depositor,
+            compliance_admin,
+            payment_destination,
+            config_bump,
+            vault_bump,
+            treasury_bump,
+        )
     }
 }

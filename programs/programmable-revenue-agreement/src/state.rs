@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+use crate::MAX_SPLITS;
+
 #[derive(InitSpace, Clone, AnchorSerialize, AnchorDeserialize)]
 pub enum AccessMode {
     Open,
@@ -18,10 +20,13 @@ pub enum AgreementStatus {
 pub struct AgreementConfig {
     pub agreement_id: u64,
     pub creator: Pubkey,
-    pub mint: Pubkey,
+    pub share_mint: Pubkey,
     pub payment_mint: Pubkey,
     pub depositor: Pubkey,
     pub compliance_admin: Pubkey,
+    pub vault:Pubkey,
+    pub treasury: Pubkey,
+    pub payment_destination: Pubkey,
     pub supply: u64,
     pub share_price: u64,
     pub access_mode: AccessMode,
@@ -32,5 +37,45 @@ pub struct AgreementConfig {
     pub total_deposited: u64, // only increases
     pub shares_sold: u64,     // terms lock once > 0
     pub status: AgreementStatus,
-    pub bump: u8,
+    pub config_bump: u8,
+    pub vault_bump: u8,
+    pub treasury_bump: u8
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct TierState {
+    pub agreement: Pubkey,
+    pub tier_index: u8,
+    pub threshold: u64,
+    pub filled: u64,
+    pub acc_per_token: u128,
+    pub splits: [Split; MAX_SPLITS],
+    pub split_count: u8,
+    pub bump: u8
+}
+
+#[derive(InitSpace, Clone, AnchorSerialize, AnchorDeserialize)]
+pub enum Party {
+    Holders,
+    Wallet(Pubkey),
+}
+
+#[derive(InitSpace, Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct Split {
+    pub party: Party,
+    pub bps: u16,
+    pub owed: u64,
+}
+
+#[derive(Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct SplitInput {
+    pub party: Party,
+    pub bps: u16,
+}
+
+#[derive(Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct TierInput {
+    pub threshold: u64,
+    pub splits: Vec<SplitInput>,
 }
