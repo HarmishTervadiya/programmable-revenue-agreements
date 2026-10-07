@@ -61,9 +61,11 @@ pub struct InitializeAgreement<'info> {
     )]
     pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
+    /// CHECK: PDA ["treasury", config], created as Token-2022 account in handler.
     #[account(mut)]
     pub treasury: UncheckedAccount<'info>,
 
+    /// CHECK: PDA ["extra-account-metas", mint], TLV list created in handler.
     #[account(mut)]
     pub extra_metas: UncheckedAccount<'info>,
 
@@ -398,11 +400,18 @@ impl<'info> InitializeAgreement<'info> {
         treasury_bump: u8,
     ) -> Result<()> {
         use anchor_spl::token_2022::spl_token_2022::instruction::AuthorityType;
+        use anchor_spl::token_2022::spl_token_2022::{
+            extension::ExtensionType, state::Account as TokenAccountState,
+        };
 
         let config_key = self.agreement_config.key();
         let creator_key = self.creator.key();
 
-        let space: usize = 165;
+        // Treasury must fit required account extensions (TransferHookAccount).
+        let space = ExtensionType::try_calculate_account_len::<TokenAccountState>(&[
+            ExtensionType::TransferHookAccount,
+        ])
+        .map_err(|_| error!(ErrorCode::AccountDidNotSerialize))?;
         let lamports = Rent::get()?.minimum_balance(space);
         let treasury_key = self.treasury.key();
         let create_ix = system_instruction::create_account(

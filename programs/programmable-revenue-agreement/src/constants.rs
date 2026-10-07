@@ -15,13 +15,10 @@ pub const VAULT_SEED: &[u8] = b"vault";
 #[constant]
 pub const MAX_BPS: u64 = 10000;
 
-#[constant]
-pub const MAX_SPLITS:usize = 4;
+pub const MAX_SPLITS: usize = 4;
 
-#[constant]
-pub const MAX_TIERS:usize = 5; 
+pub const MAX_TIERS: usize = 5;
 
-#[constant]
 pub const PRECISION: u128 = 1_000_000_000_000;
 
 #[constant]
