@@ -15,6 +15,18 @@ declare_id!("2iEFwZ8qPjvEfSAtHqE7G7apQo9tVKFsiLrdAFC5sXop");
 pub mod programmable_revenue_agreement {
     use super::*;
 
+    pub fn expire_agreement(ctx: Context<ExpireAgreement>) -> Result<()> {
+        ctx.accounts.expire()
+    }
+
+    pub fn freeze_position(ctx: Context<FreezePosition>) -> Result<()> {
+        ctx.accounts.freeze()
+    }
+
+    pub fn unfreeze_position(ctx: Context<UnfreezePosition>) -> Result<()> {
+        ctx.accounts.unfreeze()
+    }
+
     pub fn claim_tier_share(ctx: Context<ClaimTierShare>) -> Result<()> {
         ctx.accounts.claim()
     }

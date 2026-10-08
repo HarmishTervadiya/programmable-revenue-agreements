@@ -28,4 +28,14 @@ pub enum PraErrorCode {
     InsufficientVaultFunds,
     #[msg("Math overflow")]
     MathOverflow,
+    #[msg("Only the compliance admin may change position freeze state")]
+    UnauthorizedComplianceAdmin,
+    #[msg("Position is already frozen")]
+    PositionAlreadyFrozen,
+    #[msg("Position is already unfrozen")]
+    PositionAlreadyUnfrozen,
+    #[msg("Agreement must be active")]
+    AgreementNotActive,
+    #[msg("Neither expiry time nor cumulative revenue cap has been reached")]
+    EndConditionNotMet,
 }
