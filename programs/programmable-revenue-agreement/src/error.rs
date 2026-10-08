@@ -20,4 +20,12 @@ pub enum PraErrorCode {
     ExpOrCapRequired,
     #[msg("Compliance admin cannot be creator")]
     AdminCannotBeCreator,
+    #[msg("Position is frozen by compliance")]
+    FrozenPosition,
+    #[msg("Nothing to claim")]
+    NothingToClaim,
+    #[msg("Vault holds less than the claim")]
+    InsufficientVaultFunds,
+    #[msg("Math overflow")]
+    MathOverflow,
 }

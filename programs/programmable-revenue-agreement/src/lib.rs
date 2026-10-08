@@ -15,6 +15,10 @@ declare_id!("2iEFwZ8qPjvEfSAtHqE7G7apQo9tVKFsiLrdAFC5sXop");
 pub mod programmable_revenue_agreement {
     use super::*;
 
+    pub fn claim_tier_share(ctx: Context<ClaimTierShare>) -> Result<()> {
+        ctx.accounts.claim()
+    }
+
     pub fn initialize_agreement(
         ctx: Context<InitializeAgreement>,
         agreement_id: u64,

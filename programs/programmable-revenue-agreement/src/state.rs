@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::MAX_SPLITS;
+use crate::{MAX_SPLITS, MAX_TIERS};
 
 #[derive(InitSpace, Clone, AnchorSerialize, AnchorDeserialize)]
 pub enum AccessMode {
@@ -53,6 +53,17 @@ pub struct TierState {
     pub splits: [Split; MAX_SPLITS],
     pub split_count: u8,
     pub bump: u8
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct ClaimRecord {
+    pub config: Pubkey,
+    pub holder: Pubkey,
+    pub last_acc: [u128; MAX_TIERS],
+    pub pending: [u64; MAX_TIERS],
+    pub frozen: bool,
+    pub bump: u8,
 }
 
 #[derive(InitSpace, Clone, AnchorSerialize, AnchorDeserialize)]
