@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
-    token_2022::{spl_token_2022::instruction::AuthorityType, SetAuthority, Token2022},
+    token_2022::{Burn, Token2022},
     token_interface::{Mint, TokenAccount},
 };
 
@@ -17,6 +17,7 @@ pub struct ExpireAgreement<'info> {
     pub agreement_config: Box<Account<'info, AgreementConfig>>,
 
     #[account(
+        mut,
         address = agreement_config.share_mint,
         mint::token_program = token_2022_program,
     )]
@@ -49,6 +50,14 @@ impl<'info> ExpireAgreement<'info> {
             PraErrorCode::EndConditionNotMet
         );
 
+        let claim_deadline = config
+            .claim_window
+            .map(|window| {
+                let seconds = i64::try_from(window).map_err(|_| PraErrorCode::MathOverflow)?;
+                now.checked_add(seconds).ok_or(PraErrorCode::MathOverflow)
+            })
+            .transpose()?;
+
         let agreement_id_bytes = config.agreement_id.to_le_bytes();
         let bump_seed = [config.config_bump];
         let config_seeds: &[&[u8]] = &[
@@ -59,24 +68,28 @@ impl<'info> ExpireAgreement<'info> {
         ];
         let signer_seeds = &[config_seeds];
 
-        // Return unsold tokens in place: no transfer hook, burn, sale, or vault sweep.
-        // The config PDA can no longer authorize purchases from this treasury.
-        anchor_spl::token_2022::set_authority(
-            CpiContext::new_with_signer(
-                self.token_2022_program.key(),
-                SetAuthority {
-                    account_or_mint: self.treasury.to_account_info(),
-                    current_authority: config.to_account_info(),
-                },
-                signer_seeds,
-            ),
-            AuthorityType::AccountOwner,
-            Some(config.creator),
-        )?;
+        // Burn the observed unsold balance without invoking the transfer hook.
+        // Keep the config PDA as treasury authority for eventual account cleanup.
+        let remaining = self.treasury.amount;
+        if remaining > 0 {
+            anchor_spl::token_2022::burn(
+                CpiContext::new_with_signer(
+                    self.token_2022_program.key(),
+                    Burn {
+                        mint: self.share_mint.to_account_info(),
+                        from: self.treasury.to_account_info(),
+                        authority: config.to_account_info(),
+                    },
+                    signer_seeds,
+                ),
+                remaining,
+            )?;
+        }
 
         // Future distribution uses this status; existing tier accumulators, holder
         // balances, pending claims and vault funds remain available for claims.
         self.agreement_config.status = AgreementStatus::Expired;
+        self.agreement_config.claim_deadline = claim_deadline;
         Ok(())
     }
 }

@@ -30,7 +30,6 @@ struct Fixture {
     mint: Pubkey,
     token: Pubkey,
     claim: Pubkey,
-    creator: Pubkey,
     treasury: Pubkey,
 }
 
@@ -47,6 +46,13 @@ fn account(owner: Pubkey, data: Vec<u8>) -> Account {
 fn serialized(value: &impl AccountSerialize) -> Vec<u8> {
     let mut data = Vec::new();
     value.try_serialize(&mut data).unwrap();
+    data
+}
+
+// Match initialization's maximum allocation: None -> Some must fit in place.
+fn serialized_config(config: &AgreementConfig) -> Vec<u8> {
+    let mut data = serialized(config);
+    data.resize(8 + AgreementConfig::INIT_SPACE, 0);
     data
 }
 
@@ -100,6 +106,8 @@ impl Fixture {
             start_time: None,
             exp_time,
             end_cap,
+            claim_window: None,
+            claim_deadline: None,
             total_deposited,
             shares_sold: 10,
             status,
@@ -107,7 +115,7 @@ impl Fixture {
             vault_bump: 0,
             treasury_bump,
         };
-        svm.set_account(config, account(ID, serialized(&cfg)))
+        svm.set_account(config, account(ID, serialized_config(&cfg)))
             .unwrap();
         let record = ClaimRecord {
             config,
@@ -167,7 +175,6 @@ impl Fixture {
             mint,
             token,
             claim,
-            creator,
             treasury,
         }
     }
@@ -210,12 +217,11 @@ impl Fixture {
         assert_eq!(config.shares_sold, 10);
         let treasury = self.svm.get_account(&self.treasury).unwrap();
         let treasury = TokenAccount::unpack(&treasury.data).unwrap();
-        assert_eq!(treasury.owner, self.creator);
-        assert_ne!(treasury.owner, self.config);
-        assert_eq!(treasury.amount, 90);
+        assert_eq!(treasury.owner, self.config);
+        assert_eq!(treasury.amount, 0);
         assert_eq!(treasury.mint, self.mint);
         let mint = self.svm.get_account(&self.mint).unwrap();
-        assert_eq!(Mint::unpack(&mint.data).unwrap().supply, 100);
+        assert_eq!(Mint::unpack(&mint.data).unwrap().supply, 10);
         let claim = self.svm.get_account(&self.claim).unwrap();
         let claim = ClaimRecord::try_deserialize(&mut claim.data.as_slice()).unwrap();
         assert_eq!(claim.last_acc, [7; MAX_TIERS]);
@@ -224,9 +230,19 @@ impl Fixture {
         assert_eq!(TokenAccount::unpack(&holder.data).unwrap().amount, 10);
     }
 
+    fn set_claim_window(&mut self, window: Option<u64>) {
+        let data = self.svm.get_account(&self.config).unwrap().data;
+        let mut config = AgreementConfig::try_deserialize(&mut data.as_slice()).unwrap();
+        config.claim_window = window;
+        self.svm
+            .set_account(self.config, account(ID, serialized_config(&config)))
+            .unwrap();
+    }
+
     fn assert_rejected(&mut self, error: PraErrorCode) {
         let config_before = self.svm.get_account(&self.config).unwrap().data;
         let treasury_before = self.svm.get_account(&self.treasury).unwrap().data;
+        let mint_before = self.svm.get_account(&self.mint).unwrap().data;
         let failure = self.expire().unwrap_err();
         assert_eq!(
             format!("{:?}", failure.err),
@@ -240,11 +256,12 @@ impl Fixture {
             self.svm.get_account(&self.treasury).unwrap().data,
             treasury_before
         );
+        assert_eq!(self.svm.get_account(&self.mint).unwrap().data, mint_before);
     }
 }
 
 #[test]
-fn expiry_at_time_boundary_by_unrelated_caller_returns_unsold_entitlement() {
+fn expiry_at_time_boundary_by_unrelated_caller_burns_unsold_entitlement() {
     let mut f = Fixture::new(Some(100), Some(500), 499, AgreementStatus::Active);
     f.set_time(100);
     f.expire().unwrap();
@@ -297,7 +314,7 @@ fn expired_and_closed_agreements_are_rejected() {
 }
 
 #[test]
-fn expiry_with_configured_token_extensions_preserves_supply_and_returns_treasury() {
+fn expiry_burns_with_configured_token_extensions_without_transfer_hook() {
     let mut f = Fixture::new(Some(100), None, 0, AgreementStatus::Active);
     f.set_time(100);
     let mint_base = Mint::unpack(&f.svm.get_account(&f.mint).unwrap().data).unwrap();
@@ -345,15 +362,23 @@ fn expiry_with_configured_token_extensions_preserves_supply_and_returns_treasury
         .unwrap();
     let mint_before = f.svm.get_account(&f.mint).unwrap().data;
     f.expire().unwrap();
-    assert_eq!(f.svm.get_account(&f.mint).unwrap().data, mint_before);
+    let mint_after = f.svm.get_account(&f.mint).unwrap().data;
+    assert_eq!(
+        StateWithExtensions::<Mint>::unpack(&mint_after)
+            .unwrap()
+            .base
+            .supply,
+        10
+    );
+    assert_eq!(&mint_after[Mint::LEN..], &mint_before[Mint::LEN..]);
     let treasury_data = f.svm.get_account(&f.treasury).unwrap().data;
     let treasury = StateWithExtensions::<TokenAccount>::unpack(&treasury_data).unwrap();
-    assert_eq!(treasury.base.owner, f.creator);
-    assert_eq!(treasury.base.amount, 90);
+    assert_eq!(treasury.base.owner, f.config);
+    assert_eq!(treasury.base.amount, 0);
 }
 
 #[test]
-fn failed_authority_cpi_does_not_expire_or_change_entitlement() {
+fn failed_burn_cpi_does_not_expire_or_change_entitlement() {
     let mut f = Fixture::new(Some(100), None, 0, AgreementStatus::Active);
     f.set_time(100);
     let mut data = f.svm.get_account(&f.treasury).unwrap().data;
@@ -363,7 +388,9 @@ fn failed_authority_cpi_does_not_expire_or_change_entitlement() {
     f.svm
         .set_account(f.treasury, account(pra::ID, data.clone()))
         .unwrap();
+    f.set_claim_window(Some(30));
     let config_before = f.svm.get_account(&f.config).unwrap().data;
+    let mint_before = f.svm.get_account(&f.mint).unwrap().data;
     let error = f.expire().unwrap_err();
     assert!(
         error
@@ -375,6 +402,7 @@ fn failed_authority_cpi_does_not_expire_or_change_entitlement() {
     );
     assert_eq!(f.svm.get_account(&f.config).unwrap().data, config_before);
     assert_eq!(f.svm.get_account(&f.treasury).unwrap().data, data);
+    assert_eq!(f.svm.get_account(&f.mint).unwrap().data, mint_before);
 }
 
 #[test]
@@ -408,7 +436,6 @@ fn expiry_preserves_accrued_holder_revenue() {
 }
 
 #[test]
-#[ignore = "Existing ClaimTierShare::try_accounts exceeds the SBF stack limit and fails with an access violation; run explicitly once claim is fixed"]
 fn accrued_revenue_is_claimable_after_expiry() {
     accrued_revenue_case(true);
 }
@@ -553,4 +580,125 @@ fn accrued_revenue_case(claim_after_expiry: bool) {
             .amount,
         969
     );
+}
+
+#[test]
+fn deadline_uses_expiry_call_timestamp_or_none() {
+    for window in [None, Some(30)] {
+        let mut f = Fixture::new(Some(99), None, 0, AgreementStatus::Active);
+        f.set_time(100);
+        f.set_claim_window(window);
+        f.expire().unwrap();
+        f.assert_expired();
+        let data = f.svm.get_account(&f.config).unwrap().data;
+        let config = AgreementConfig::try_deserialize(&mut data.as_slice()).unwrap();
+        assert_eq!(config.claim_deadline, window.map(|_| 130));
+        assert_eq!(config.claim_window, window);
+    }
+}
+
+#[test]
+fn deadline_conversion_and_addition_overflow_roll_back() {
+    for (now, window) in [(100, u64::MAX), (i64::MAX - 1, 2)] {
+        let mut f = Fixture::new(Some(99), None, 0, AgreementStatus::Active);
+        f.set_time(now);
+        f.set_claim_window(Some(window));
+        f.assert_rejected(PraErrorCode::MathOverflow);
+    }
+}
+
+#[test]
+fn empty_frozen_treasury_skips_burn_cpi() {
+    let mut f = Fixture::new(Some(100), None, 0, AgreementStatus::Active);
+    f.set_time(100);
+    let mut data = f.svm.get_account(&f.treasury).unwrap().data;
+    let mut treasury = TokenAccount::unpack(&data).unwrap();
+    treasury.amount = 0;
+    treasury.state = AccountState::Frozen; // Even a zero-amount burn would fail.
+    TokenAccount::pack(treasury, &mut data).unwrap();
+    f.svm
+        .set_account(f.treasury, account(pra::ID, data.clone()))
+        .unwrap();
+    let mint_before = f.svm.get_account(&f.mint).unwrap().data;
+    let result = f.expire().unwrap();
+    assert!(!result
+        .logs
+        .iter()
+        .any(|log| log.contains("Instruction: Burn")));
+    assert_eq!(f.svm.get_account(&f.treasury).unwrap().data, data);
+    assert_eq!(f.svm.get_account(&f.mint).unwrap().data, mint_before);
+    let config_data = f.svm.get_account(&f.config).unwrap().data;
+    let config = AgreementConfig::try_deserialize(&mut config_data.as_slice()).unwrap();
+    assert!(matches!(config.status, AgreementStatus::Expired));
+    assert_eq!(config.claim_deadline, None);
+    assert_eq!(config.supply, 100);
+}
+
+#[test]
+fn wrong_share_mint_or_treasury_authority_is_rejected() {
+    for wrong_mint in [true, false] {
+        let mut f = Fixture::new(Some(100), None, 0, AgreementStatus::Active);
+        f.set_time(100);
+        if wrong_mint {
+            let substitute = Pubkey::new_unique();
+            f.svm
+                .set_account(substitute, f.svm.get_account(&f.mint).unwrap())
+                .unwrap();
+            f.mint = substitute;
+        } else {
+            let mut data = f.svm.get_account(&f.treasury).unwrap().data;
+            let mut treasury = TokenAccount::unpack(&data).unwrap();
+            treasury.owner = Pubkey::new_unique();
+            TokenAccount::pack(treasury, &mut data).unwrap();
+            f.svm
+                .set_account(f.treasury, account(pra::ID, data))
+                .unwrap();
+        }
+        let before: Vec<_> = [f.config, f.mint, f.treasury]
+            .iter()
+            .map(|key| f.svm.get_account(key).unwrap())
+            .collect();
+        let failure = f.expire().unwrap_err();
+        let expected = if wrong_mint {
+            "ConstraintAddress"
+        } else {
+            "ConstraintTokenOwner"
+        };
+        assert!(
+            failure.meta.logs.iter().any(|log| log.contains(expected)),
+            "{failure:?}"
+        );
+        for (key, previous) in [f.config, f.mint, f.treasury].iter().zip(before) {
+            assert_eq!(f.svm.get_account(key).unwrap(), previous);
+        }
+    }
+}
+
+#[test]
+fn burn_uses_observed_balance_instead_of_contractual_supply_minus_sales() {
+    let mut f = Fixture::new(None, Some(500), 500, AgreementStatus::Active);
+    f.set_time(100);
+    f.set_claim_window(Some(30));
+    let mut data = f.svm.get_account(&f.treasury).unwrap().data;
+    let mut treasury = TokenAccount::unpack(&data).unwrap();
+    treasury.amount = 37; // Deliberately differs from supply (100) minus sales (10).
+    TokenAccount::pack(treasury, &mut data).unwrap();
+    f.svm
+        .set_account(f.treasury, account(pra::ID, data))
+        .unwrap();
+    f.expire().unwrap();
+    let treasury = TokenAccount::unpack(&f.svm.get_account(&f.treasury).unwrap().data).unwrap();
+    assert_eq!(treasury.amount, 0);
+    assert_eq!(treasury.owner, f.config);
+    assert_eq!(
+        Mint::unpack(&f.svm.get_account(&f.mint).unwrap().data)
+            .unwrap()
+            .supply,
+        63
+    );
+    let data = f.svm.get_account(&f.config).unwrap().data;
+    let config = AgreementConfig::try_deserialize(&mut data.as_slice()).unwrap();
+    assert_eq!(config.supply, 100);
+    assert_eq!(config.shares_sold, 10);
+    assert_eq!(config.claim_deadline, Some(130));
 }

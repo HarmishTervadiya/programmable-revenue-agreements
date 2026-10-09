@@ -15,6 +15,10 @@ declare_id!("2iEFwZ8qPjvEfSAtHqE7G7apQo9tVKFsiLrdAFC5sXop");
 pub mod programmable_revenue_agreement {
     use super::*;
 
+    pub fn close_agreement(ctx: Context<CloseAgreement>) -> Result<()> {
+        ctx.accounts.close()
+    }
+
     pub fn expire_agreement(ctx: Context<ExpireAgreement>) -> Result<()> {
         ctx.accounts.expire()
     }

@@ -43,6 +43,13 @@ fn serialized(value: &impl AccountSerialize) -> Vec<u8> {
     data
 }
 
+// Match initialization's maximum allocation: None -> Some must fit in place.
+fn serialized_config(config: &AgreementConfig) -> Vec<u8> {
+    let mut data = serialized(config);
+    data.resize(8 + AgreementConfig::INIT_SPACE, 0);
+    data
+}
+
 impl Fixture {
     fn new(frozen: bool) -> Self {
         let mut svm = LiteSVM::new().with_transaction_history(0);
@@ -86,6 +93,8 @@ impl Fixture {
             start_time: None,
             exp_time: Some(i64::MAX),
             end_cap: None,
+            claim_window: None,
+            claim_deadline: None,
             total_deposited: 0,
             shares_sold: 10,
             status: AgreementStatus::Active,
@@ -93,7 +102,7 @@ impl Fixture {
             vault_bump: 0,
             treasury_bump: 0,
         };
-        svm.set_account(config, account(ID, serialized(&cfg)))
+        svm.set_account(config, account(ID, serialized_config(&cfg)))
             .unwrap();
         let record = ClaimRecord {
             config,

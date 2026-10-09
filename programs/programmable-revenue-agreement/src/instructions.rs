@@ -11,3 +11,6 @@ pub mod unfreeze_position;
 
 pub use freeze_position::*;
 pub use unfreeze_position::*;
+
+pub mod close_agreement;
+pub use close_agreement::*;

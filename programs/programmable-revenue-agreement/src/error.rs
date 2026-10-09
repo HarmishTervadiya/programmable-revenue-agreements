@@ -40,4 +40,14 @@ pub enum PraErrorCode {
     AgreementNotActive,
     #[msg("Neither expiry time nor cumulative revenue cap has been reached")]
     EndConditionNotMet,
+    #[msg("Only the creator may close the agreement")]
+    UnauthorizedCreator,
+    #[msg("Agreement must be expired")]
+    AgreementNotExpired,
+    #[msg("Claim deadline has not elapsed and vault exceeds the dust allowance")]
+    ClaimWindowStillOpen,
+    #[msg("Treasury must be empty before closure")]
+    TreasuryNotEmpty,
+    #[msg("Vault must be empty before closure")]
+    VaultNotEmpty,
 }

@@ -109,7 +109,8 @@ impl<'info> ClaimTierShare<'info> {
                 .checked_mul(delta)
                 .ok_or(PraErrorCode::MathOverflow)?
                 .checked_div(PRECISION)
-                .ok_or(PraErrorCode::MathOverflow)? as u64;
+                .ok_or(PraErrorCode::MathOverflow)?;
+            let earned = u64::try_from(earned).map_err(|_| PraErrorCode::MathOverflow)?;
             payout = payout
                 .checked_add(earned)
                 .ok_or(PraErrorCode::MathOverflow)?
