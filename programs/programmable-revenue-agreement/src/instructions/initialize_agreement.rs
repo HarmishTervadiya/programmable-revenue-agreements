@@ -10,9 +10,7 @@ use crate::{
     MAX_SPLITS, MAX_TIERS, TIER_SEED, TREASURY_SEED, VAULT_SEED,
 };
 
-use anchor_lang::solana_program::{
-    program::invoke_signed, rent::Rent, system_instruction,
-};
+use anchor_lang::solana_program::{program::invoke_signed, rent::Rent, system_instruction};
 use anchor_spl::token_2022::{
     InitializeAccount3, InitializeMint2, MintTo, SetAuthority, ThawAccount,
 };
@@ -127,6 +125,7 @@ impl<'info> InitializeAgreement<'info> {
         start_time: Option<i64>,
         exp_time: Option<i64>,
         end_cap: Option<u64>,
+        claim_window: Option<u64>,
         depositor: Pubkey,
         compliance_admin: Pubkey,
         payment_destination: Pubkey,
@@ -143,6 +142,9 @@ impl<'info> InitializeAgreement<'info> {
             exp_time.is_some() || end_cap.is_some(),
             PraErrorCode::ExpOrCapRequired
         );
+        if let Some(window) = claim_window {
+            require!(window > 0, PraErrorCode::InvalidClaimWindow);
+        }
         require!(
             compliance_admin != self.creator.key(),
             PraErrorCode::AdminCannotBeCreator
@@ -209,6 +211,8 @@ impl<'info> InitializeAgreement<'info> {
             start_time,
             exp_time,
             end_cap,
+            claim_window,
+            claim_deadline: None,
             total_deposited: 0,
             shares_sold: 0,
             status: AgreementStatus::Active,
@@ -348,19 +352,37 @@ impl<'info> InitializeAgreement<'info> {
         input: Option<&TierInput>,
         config_key: Pubkey,
     ) -> Result<()> {
-        let (_, bump) = Pubkey::find_program_address(
-            &[TIER_SEED, config_key.as_ref(), &[idx]],
-            &crate::ID,
-        );
+        let (_, bump) =
+            Pubkey::find_program_address(&[TIER_SEED, config_key.as_ref(), &[idx]], &crate::ID);
         if let Some(input) = input {
             let mut arr = [
-                Split { party: Party::Holders, bps: 0, owed: 0 },
-                Split { party: Party::Holders, bps: 0, owed: 0 },
-                Split { party: Party::Holders, bps: 0, owed: 0 },
-                Split { party: Party::Holders, bps: 0, owed: 0 },
+                Split {
+                    party: Party::Holders,
+                    bps: 0,
+                    owed: 0,
+                },
+                Split {
+                    party: Party::Holders,
+                    bps: 0,
+                    owed: 0,
+                },
+                Split {
+                    party: Party::Holders,
+                    bps: 0,
+                    owed: 0,
+                },
+                Split {
+                    party: Party::Holders,
+                    bps: 0,
+                    owed: 0,
+                },
             ];
             for (j, s) in input.splits.iter().enumerate() {
-                arr[j] = Split { party: s.party.clone(), bps: s.bps, owed: 0 };
+                arr[j] = Split {
+                    party: s.party.clone(),
+                    bps: s.bps,
+                    owed: 0,
+                };
             }
             slot.set_inner(TierState {
                 agreement: config_key,
@@ -380,10 +402,26 @@ impl<'info> InitializeAgreement<'info> {
                 filled: 0,
                 acc_per_token: 0,
                 splits: [
-                    Split { party: Party::Holders, bps: 0, owed: 0 },
-                    Split { party: Party::Holders, bps: 0, owed: 0 },
-                    Split { party: Party::Holders, bps: 0, owed: 0 },
-                    Split { party: Party::Holders, bps: 0, owed: 0 },
+                    Split {
+                        party: Party::Holders,
+                        bps: 0,
+                        owed: 0,
+                    },
+                    Split {
+                        party: Party::Holders,
+                        bps: 0,
+                        owed: 0,
+                    },
+                    Split {
+                        party: Party::Holders,
+                        bps: 0,
+                        owed: 0,
+                    },
+                    Split {
+                        party: Party::Holders,
+                        bps: 0,
+                        owed: 0,
+                    },
                 ],
                 split_count: 0,
                 bump,
