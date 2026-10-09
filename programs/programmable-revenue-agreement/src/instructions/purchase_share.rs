@@ -216,14 +216,16 @@ impl<'info> PurchaseShare<'info> {
             self.payment_mint.decimals,
         )?;
 
-        // Treasury -> buyer (Token-2022). Fires the transfer hook; the
-        // ExtraAccountMetaList is empty until the hook's ClaimRecord shape
-        // locks, so no extra hook accounts are required on this CPI yet.
-        // Once the list is populated, callers must append the hook's extra
-        // accounts (sender/receiver ClaimRecords) to this transfer.
+        // Treasury -> buyer (Token-2022 via the unified token-interface
+        // CPI, dispatched to the Token-2022 program). Fires the transfer
+        // hook; the ExtraAccountMetaList is empty until the hook's
+        // ClaimRecord shape locks, so no extra hook accounts are required
+        // on this CPI yet. Once the list is populated, callers must append
+        // the hook's extra accounts (sender/receiver ClaimRecords) to this
+        // transfer.
         let cpi = CpiContext::new_with_signer(
             self.token_2022_program.key(),
-            anchor_spl::token_2022::TransferChecked {
+            anchor_spl::token_interface::TransferChecked {
                 from: self.treasury.to_account_info(),
                 to: self.buyer_share_account.to_account_info(),
                 mint: self.share_mint.to_account_info(),
@@ -231,7 +233,7 @@ impl<'info> PurchaseShare<'info> {
             },
             signer_seeds,
         );
-        anchor_spl::token_2022::transfer_checked(cpi, amount, self.share_mint.decimals)?;
+        anchor_spl::token_interface::transfer_checked(cpi, amount, self.share_mint.decimals)?;
 
         self.agreement_config.shares_sold = self
             .agreement_config
