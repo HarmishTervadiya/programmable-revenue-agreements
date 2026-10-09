@@ -13,23 +13,23 @@ pub struct ClaimTierShare<'info> {
     pub agreement_config: Box<Account<'info, AgreementConfig>>,
 
     #[account(address = agreement_config.share_mint)]
-    pub share_mint: InterfaceAccount<'info, Mint>,
+    pub share_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(address = agreement_config.payment_mint)]
-    pub payment_mint: InterfaceAccount<'info, Mint>,
+    pub payment_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         token::mint = share_mint,
         token::authority = holder,
     )]
-    pub holder_share_ata: InterfaceAccount<'info, TokenAccount>,
+    pub holder_share_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
         token::mint = payment_mint,
         token::authority = holder,
     )]
-    pub holder_usdc_ata: InterfaceAccount<'info, TokenAccount>,
+    pub holder_usdc_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,

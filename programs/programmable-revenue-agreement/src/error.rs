@@ -18,6 +18,8 @@ pub enum PraErrorCode {
     SplitsMustSumTo10000,
     #[msg("Need exp_time or end_cap (or both)")]
     ExpOrCapRequired,
+    #[msg("Claim window must be above zero")]
+    InvalidClaimWindow,
     #[msg("Compliance admin cannot be creator")]
     AdminCannotBeCreator,
     #[msg("Position is frozen by compliance")]

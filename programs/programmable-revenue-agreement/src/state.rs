@@ -34,6 +34,8 @@ pub struct AgreementConfig {
     pub start_time: Option<i64>,
     pub exp_time: Option<i64>,
     pub end_cap: Option<u64>,
+    pub claim_window: Option<u64>,
+    pub claim_deadline: Option<i64>,
     pub total_deposited: u64, // only increases
     pub shares_sold: u64,     // terms lock once > 0
     pub status: AgreementStatus,

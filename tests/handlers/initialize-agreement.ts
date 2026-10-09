@@ -119,14 +119,15 @@ export function defineInitializeTests(ctx: SharedCtx) {
       provider,
       () =>
         program.methods
-          .initializeAgreement( 
+          .initializeAgreement(
             ctx.agreementId,
-            ctx.supply, 
+            ctx.supply,
             ctx.sharePrice,
-            { open: {} }, 
+            { open: {} },
             twoTiers(provider),
             null,
             new anchor.BN(9_999_999_999),
+            null,
             null,
             ctx.depositor,
             ctx.complianceAdmin,
@@ -151,6 +152,8 @@ export function defineInitializeTests(ctx: SharedCtx) {
     expect(cfg.tierCount).to.equal(2);
     expect(cfg.totalDeposited.toNumber()).to.equal(0);
     expect(cfg.sharesSold.toNumber()).to.equal(0);
+    expect(cfg.claimWindow).to.be.null;
+    expect(cfg.claimDeadline).to.be.null;
 
     const t0 = await program.account.tierState.fetch(ctx.tierPdas[0]);
     expect(t0.threshold.toNumber()).to.equal(10_000_000_000);
@@ -175,6 +178,87 @@ export function defineInitializeTests(ctx: SharedCtx) {
     ).to.not.be.null;
   });
 
+  it("Initialize with all fields set", async () => {
+    const fullId = ctx.agreementId.addn(10);
+    const fullMint = anchor.web3.Keypair.generate();
+    const fullDepositor = anchor.web3.Keypair.generate().publicKey;
+    const startTime = new anchor.BN(1_700_000_000);
+    const expTime = new anchor.BN(1_800_000_000);
+    const endCap = new anchor.BN(100_000_000_000);
+    const claimWindow = new anchor.BN(2_592_000);
+    const fullTiers = [
+      {
+        threshold: new anchor.BN(1_000_000_000),
+        splits: [{ party: { holders: {} }, bps: 10_000 }],
+      },
+      {
+        threshold: new anchor.BN(5_000_000_000),
+        splits: [
+          { party: { holders: {} }, bps: 7_500 },
+          { party: { wallet: fullDepositor }, bps: 2_500 },
+        ],
+      },
+      {
+        threshold: new anchor.BN(10_000_000_000),
+        splits: [
+          { party: { holders: {} }, bps: 5_000 },
+          { party: { wallet: provider.wallet.publicKey }, bps: 5_000 },
+        ],
+      },
+      {
+        threshold: new anchor.BN(20_000_000_000),
+        splits: [{ party: { wallet: fullDepositor }, bps: 10_000 }],
+      },
+      {
+        threshold: new anchor.BN("18446744073709551615"),
+        splits: [
+          { party: { holders: {} }, bps: 3_000 },
+          { party: { wallet: provider.wallet.publicKey }, bps: 7_000 },
+        ],
+      },
+    ];
+    const tx = await sendWithRetry(
+      provider,
+      () =>
+        program.methods
+          .initializeAgreement(
+            fullId,
+            ctx.supply,
+            ctx.sharePrice,
+            { allowlist: {} },
+            fullTiers,
+            startTime,
+            expTime,
+            endCap,
+            fullDepositor,
+            ctx.complianceAdmin,
+            ctx.paymentDestination!,
+            claimWindow,
+          )
+          .accountsPartial(initAccountsFor(ctx, fullId, fullMint.publicKey))
+          .signers([fullMint])
+          .rpc({ commitment: "confirmed", skipPreflight: false }),
+      "initialize-full",
+    );
+    console.log("\nFull-fields tx", tx);
+
+    const cfg = await program.account.agreementConfig.fetch(
+      pdasFor(program, provider.wallet.publicKey, fullId, fullMint.publicKey)
+        .config,
+    );
+    expect(cfg.supply.toNumber()).to.equal(ctx.supply.toNumber());
+    expect(cfg.tierCount).to.equal(5);
+    expect(cfg.accessMode).to.have.property("allowlist");
+    expect(cfg.startTime.toNumber()).to.equal(1_700_000_000);
+    expect(cfg.expTime.toNumber()).to.equal(1_800_000_000);
+    expect(cfg.endCap.toNumber()).to.equal(100_000_000_000);
+    expect(cfg.claimWindow.toNumber()).to.equal(2_592_000);
+    expect(cfg.claimDeadline).to.be.null;
+    expect(cfg.depositor.toBase58()).to.equal(fullDepositor.toBase58());
+    expect(cfg.totalDeposited.toNumber()).to.equal(0);
+    expect(cfg.sharesSold.toNumber()).to.equal(0);
+  });
+
   it("Reject empty tiers", async () => {
     const badId = ctx.agreementId.addn(1);
     const badMint = anchor.web3.Keypair.generate();
@@ -192,13 +276,12 @@ export function defineInitializeTests(ctx: SharedCtx) {
               null,
               new anchor.BN(9_999_999_999),
               null,
+              null,
               ctx.depositor,
               ctx.complianceAdmin,
               ctx.paymentDestination!,
             )
-            .accountsPartial(
-              initAccountsFor(ctx, badId, badMint.publicKey),
-            )
+            .accountsPartial(initAccountsFor(ctx, badId, badMint.publicKey))
             .signers([badMint])
             .rpc({ commitment: "confirmed", skipPreflight: false }),
         "init-empty-tiers",
@@ -209,7 +292,10 @@ export function defineInitializeTests(ctx: SharedCtx) {
         err instanceof anchor.AnchorError &&
         err.error.errorCode.code === "InvalidTierCount"
       ) {
-        console.log("\nEmpty tiers failed as expected:", err.error.errorMessage);
+        console.log(
+          "\nEmpty tiers failed as expected:",
+          err.error.errorMessage,
+        );
       } else {
         throw err;
       }
@@ -239,13 +325,12 @@ export function defineInitializeTests(ctx: SharedCtx) {
               null,
               new anchor.BN(9_999_999_999),
               null,
+              null,
               ctx.depositor,
               ctx.complianceAdmin,
               ctx.paymentDestination!,
             )
-            .accountsPartial(
-              initAccountsFor(ctx, badId, badMint.publicKey),
-            )
+            .accountsPartial(initAccountsFor(ctx, badId, badMint.publicKey))
             .signers([badMint])
             .rpc({ commitment: "confirmed", skipPreflight: false }),
         "init-bounded-tier",
