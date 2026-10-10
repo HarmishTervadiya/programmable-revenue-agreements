@@ -22,7 +22,10 @@ pub const MAX_TIERS: usize = 5;
 pub const PRECISION: u128 = 1_000_000_000_000;
 
 #[constant]
-pub const CLAIM_SEED: &[u8] = b"claim"; 
+pub const CLAIM_SEED: &[u8] = b"claim";
 
 #[constant]
 pub const EXTRA_METAS: &[u8] = b"extra-account-metas";
+
+#[constant]
+pub const DUST_ALLOWANCE: u64 = 1_000;

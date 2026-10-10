@@ -1,0 +1,1350 @@
+{
+  "waterfall": [
+    {
+      "name": "one-tier-partial",
+      "note": "",
+      "input": {
+        "thresholds": ["100", "18446744073709551615"],
+        "totalBefore": "0",
+        "deposit": "40"
+      },
+      "expected": {
+        "totalAfter": "40",
+        "filledBefore": ["0", "0"],
+        "filledAfter": ["40", "0"],
+        "allocations": ["40", "0"],
+        "unallocated": "0",
+        "capReached": false,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "exact-first-boundary",
+      "note": "",
+      "input": {
+        "thresholds": ["100", "18446744073709551615"],
+        "totalBefore": "0",
+        "deposit": "100"
+      },
+      "expected": {
+        "totalAfter": "100",
+        "filledBefore": ["0", "0"],
+        "filledAfter": ["100", "0"],
+        "allocations": ["100", "0"],
+        "unallocated": "0",
+        "capReached": false,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "continue-at-boundary",
+      "note": "",
+      "input": {
+        "thresholds": ["100", "18446744073709551615"],
+        "totalBefore": "100",
+        "deposit": "1"
+      },
+      "expected": {
+        "totalAfter": "101",
+        "filledBefore": ["100", "0"],
+        "filledAfter": ["100", "1"],
+        "allocations": ["0", "1"],
+        "unallocated": "0",
+        "capReached": false,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "span-three-tiers",
+      "note": "Thresholds are cumulative; tier 1 capacity is 200 - 100, not 200.",
+      "input": {
+        "thresholds": ["100", "200", "18446744073709551615"],
+        "totalBefore": "50",
+        "deposit": "200"
+      },
+      "expected": {
+        "totalAfter": "250",
+        "filledBefore": ["50", "0", "0"],
+        "filledAfter": ["100", "100", "50"],
+        "allocations": ["50", "100", "50"],
+        "unallocated": "0",
+        "capReached": false,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "exact-second-boundary",
+      "note": "",
+      "input": {
+        "thresholds": ["100", "200", "18446744073709551615"],
+        "totalBefore": "50",
+        "deposit": "150"
+      },
+      "expected": {
+        "totalAfter": "200",
+        "filledBefore": ["50", "0", "0"],
+        "filledAfter": ["100", "100", "0"],
+        "allocations": ["50", "100", "0"],
+        "unallocated": "0",
+        "capReached": false,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "already-final-tier",
+      "note": "",
+      "input": {
+        "thresholds": ["100", "200", "18446744073709551615"],
+        "totalBefore": "250",
+        "deposit": "25"
+      },
+      "expected": {
+        "totalAfter": "275",
+        "filledBefore": ["100", "100", "50"],
+        "filledAfter": ["100", "100", "75"],
+        "allocations": ["0", "0", "25"],
+        "unallocated": "0",
+        "capReached": false,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "zero-deposit",
+      "note": "",
+      "input": {
+        "thresholds": ["100", "18446744073709551615"],
+        "totalBefore": "99",
+        "deposit": "0"
+      },
+      "expected": {
+        "totalAfter": "99",
+        "filledBefore": ["99", "0"],
+        "filledAfter": ["99", "0"],
+        "allocations": ["0", "0"],
+        "unallocated": "0",
+        "capReached": false,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "zero-first-threshold",
+      "note": "Initialization permits a first threshold of zero.",
+      "input": {
+        "thresholds": ["0", "18446744073709551615"],
+        "totalBefore": "0",
+        "deposit": "5"
+      },
+      "expected": {
+        "totalAfter": "5",
+        "filledBefore": ["0", "0"],
+        "filledAfter": ["0", "5"],
+        "allocations": ["0", "5"],
+        "unallocated": "0",
+        "capReached": false,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "cap-exact",
+      "note": "",
+      "input": {
+        "thresholds": ["100", "18446744073709551615"],
+        "totalBefore": "90",
+        "deposit": "10",
+        "endCap": "100"
+      },
+      "expected": {
+        "totalAfter": "100",
+        "filledBefore": ["90", "0"],
+        "filledAfter": ["100", "0"],
+        "allocations": ["10", "0"],
+        "unallocated": "0",
+        "capReached": true,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "cap-crossing",
+      "note": "Arithmetic allocation only: end cap flags expiry but does not decide acceptance/clipping.",
+      "input": {
+        "thresholds": ["100", "18446744073709551615"],
+        "totalBefore": "90",
+        "deposit": "30",
+        "endCap": "100"
+      },
+      "expected": {
+        "totalAfter": "120",
+        "filledBefore": ["90", "0"],
+        "filledAfter": ["100", "20"],
+        "allocations": ["10", "20"],
+        "unallocated": "0",
+        "capReached": true,
+        "excessOverCap": "20"
+      }
+    },
+    {
+      "name": "cap-not-reached",
+      "note": "",
+      "input": {
+        "thresholds": ["18446744073709551615"],
+        "totalBefore": "0",
+        "deposit": "99",
+        "endCap": "100"
+      },
+      "expected": {
+        "totalAfter": "99",
+        "filledBefore": ["0"],
+        "filledAfter": ["99"],
+        "allocations": ["99"],
+        "unallocated": "0",
+        "capReached": false,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "zero-cap",
+      "note": "",
+      "input": {
+        "thresholds": ["18446744073709551615"],
+        "totalBefore": "0",
+        "deposit": "0",
+        "endCap": "0"
+      },
+      "expected": {
+        "totalAfter": "0",
+        "filledBefore": ["0"],
+        "filledAfter": ["0"],
+        "allocations": ["0"],
+        "unallocated": "0",
+        "capReached": true,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "beyond-number-safe-integer",
+      "note": "",
+      "input": {
+        "thresholds": ["18446744073709551615"],
+        "totalBefore": "9007199254740993",
+        "deposit": "7"
+      },
+      "expected": {
+        "totalAfter": "9007199254741000",
+        "filledBefore": ["9007199254740993"],
+        "filledAfter": ["9007199254741000"],
+        "allocations": ["7"],
+        "unallocated": "0",
+        "capReached": false,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "u64-maximum-deposit",
+      "note": "",
+      "input": {
+        "thresholds": ["18446744073709551615"],
+        "totalBefore": "0",
+        "deposit": "18446744073709551615"
+      },
+      "expected": {
+        "totalAfter": "18446744073709551615",
+        "filledBefore": ["0"],
+        "filledAfter": ["18446744073709551615"],
+        "allocations": ["18446744073709551615"],
+        "unallocated": "0",
+        "capReached": false,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "last-base-unit",
+      "note": "",
+      "input": {
+        "thresholds": ["100", "18446744073709551615"],
+        "totalBefore": "18446744073709551614",
+        "deposit": "1"
+      },
+      "expected": {
+        "totalAfter": "18446744073709551615",
+        "filledBefore": ["100", "18446744073709551514"],
+        "filledAfter": ["100", "18446744073709551515"],
+        "allocations": ["0", "1"],
+        "unallocated": "0",
+        "capReached": false,
+        "excessOverCap": "0"
+      }
+    },
+    {
+      "name": "five-tiers",
+      "note": "",
+      "input": {
+        "thresholds": ["10", "20", "30", "40", "18446744073709551615"],
+        "totalBefore": "0",
+        "deposit": "45"
+      },
+      "expected": {
+        "totalAfter": "45",
+        "filledBefore": ["0", "0", "0", "0", "0"],
+        "filledAfter": ["10", "10", "10", "10", "5"],
+        "allocations": ["10", "10", "10", "10", "5"],
+        "unallocated": "0",
+        "capReached": false,
+        "excessOverCap": "0"
+      }
+    }
+  ],
+  "splits": [
+    {
+      "name": "all-holders",
+      "note": "",
+      "input": {
+        "amount": "17",
+        "bps": ["10000"]
+      },
+      "expected": {
+        "amounts": ["17"],
+        "unallocated": "0",
+        "scaledRemainders": ["0"]
+      }
+    },
+    {
+      "name": "half-holders-half-wallet",
+      "note": "Each rational share floors separately; the remaining unit is reported, not reassigned.",
+      "input": {
+        "amount": "5",
+        "bps": ["5000", "5000"]
+      },
+      "expected": {
+        "amounts": ["2", "2"],
+        "unallocated": "1",
+        "scaledRemainders": ["5000", "5000"]
+      }
+    },
+    {
+      "name": "four-way-exact",
+      "note": "",
+      "input": {
+        "amount": "100",
+        "bps": ["2500", "2500", "2500", "2500"]
+      },
+      "expected": {
+        "amounts": ["25", "25", "25", "25"],
+        "unallocated": "0",
+        "scaledRemainders": ["0", "0", "0", "0"]
+      }
+    },
+    {
+      "name": "one-base-unit",
+      "note": "",
+      "input": {
+        "amount": "1",
+        "bps": ["3333", "6667"]
+      },
+      "expected": {
+        "amounts": ["0", "0"],
+        "unallocated": "1",
+        "scaledRemainders": ["3333", "6667"]
+      }
+    },
+    {
+      "name": "thirds",
+      "note": "",
+      "input": {
+        "amount": "7",
+        "bps": ["3333", "3333", "3334"]
+      },
+      "expected": {
+        "amounts": ["2", "2", "2"],
+        "unallocated": "1",
+        "scaledRemainders": ["3331", "3331", "3338"]
+      }
+    },
+    {
+      "name": "zero-share-and-zero-amount",
+      "note": "",
+      "input": {
+        "amount": "0",
+        "bps": ["0", "10000"]
+      },
+      "expected": {
+        "amounts": ["0", "0"],
+        "unallocated": "0",
+        "scaledRemainders": ["0", "0"]
+      }
+    },
+    {
+      "name": "maximum-full-share",
+      "note": "",
+      "input": {
+        "amount": "18446744073709551615",
+        "bps": ["10000"]
+      },
+      "expected": {
+        "amounts": ["18446744073709551615"],
+        "unallocated": "0",
+        "scaledRemainders": ["0"]
+      }
+    },
+    {
+      "name": "maximum-halves",
+      "note": "",
+      "input": {
+        "amount": "18446744073709551615",
+        "bps": ["5000", "5000"]
+      },
+      "expected": {
+        "amounts": ["9223372036854775807", "9223372036854775807"],
+        "unallocated": "1",
+        "scaledRemainders": ["5000", "5000"]
+      }
+    }
+  ],
+  "accrual": [
+    {
+      "name": "exact",
+      "note": "",
+      "input": {
+        "holderRevenue": "20",
+        "entitlementUnits": "10",
+        "accumulator": "7"
+      },
+      "expected": {
+        "increment": "2000000000000",
+        "accumulator": "2000000000007",
+        "scaledRemainder": "0",
+        "collectiveClaim": "20",
+        "integerDust": "0"
+      }
+    },
+    {
+      "name": "one-over-three",
+      "note": "",
+      "input": {
+        "holderRevenue": "1",
+        "entitlementUnits": "3",
+        "accumulator": "0"
+      },
+      "expected": {
+        "increment": "333333333333",
+        "accumulator": "333333333333",
+        "scaledRemainder": "1",
+        "collectiveClaim": "0",
+        "integerDust": "1"
+      }
+    },
+    {
+      "name": "ten-over-three",
+      "note": "",
+      "input": {
+        "holderRevenue": "10",
+        "entitlementUnits": "3",
+        "accumulator": "0"
+      },
+      "expected": {
+        "increment": "3333333333333",
+        "accumulator": "3333333333333",
+        "scaledRemainder": "1",
+        "collectiveClaim": "9",
+        "integerDust": "1"
+      }
+    },
+    {
+      "name": "below-precision",
+      "note": "",
+      "input": {
+        "holderRevenue": "1",
+        "entitlementUnits": "1000000000001",
+        "accumulator": "0"
+      },
+      "expected": {
+        "increment": "0",
+        "accumulator": "0",
+        "scaledRemainder": "1000000000000",
+        "collectiveClaim": "0",
+        "integerDust": "1"
+      }
+    },
+    {
+      "name": "zero-revenue",
+      "note": "",
+      "input": {
+        "holderRevenue": "0",
+        "entitlementUnits": "18446744073709551615",
+        "accumulator": "99"
+      },
+      "expected": {
+        "increment": "0",
+        "accumulator": "99",
+        "scaledRemainder": "0",
+        "collectiveClaim": "0",
+        "integerDust": "0"
+      }
+    },
+    {
+      "name": "maximum-revenue-single-unit",
+      "note": "",
+      "input": {
+        "holderRevenue": "18446744073709551615",
+        "entitlementUnits": "1",
+        "accumulator": "0"
+      },
+      "expected": {
+        "increment": "18446744073709551615000000000000",
+        "accumulator": "18446744073709551615000000000000",
+        "scaledRemainder": "0",
+        "collectiveClaim": "18446744073709551615",
+        "integerDust": "0"
+      }
+    },
+    {
+      "name": "maximum-revenue-and-units",
+      "note": "",
+      "input": {
+        "holderRevenue": "18446744073709551615",
+        "entitlementUnits": "18446744073709551615",
+        "accumulator": "0"
+      },
+      "expected": {
+        "increment": "1000000000000",
+        "accumulator": "1000000000000",
+        "scaledRemainder": "0",
+        "collectiveClaim": "18446744073709551615",
+        "integerDust": "0"
+      }
+    },
+    {
+      "name": "accumulator-exact-u128-limit",
+      "note": "",
+      "input": {
+        "holderRevenue": "1",
+        "entitlementUnits": "1000000000000",
+        "accumulator": "340282366920938463463374607431768211454"
+      },
+      "expected": {
+        "increment": "1",
+        "accumulator": "340282366920938463463374607431768211455",
+        "scaledRemainder": "0",
+        "collectiveClaim": "1",
+        "integerDust": "0"
+      }
+    }
+  ],
+  "claims": [
+    {
+      "name": "existing-expiry-fixture",
+      "note": "Same inputs and expected payout as the existing post-expiry Rust test.",
+      "runtime": true,
+      "input": {
+        "balance": "10",
+        "acc": ["2000000000007"],
+        "last": ["7"],
+        "pending": ["11"],
+        "vault": "1000"
+      },
+      "expected": {
+        "earned": ["20"],
+        "scaledRemainders": ["0"],
+        "payout": "31",
+        "vaultAfter": "969",
+        "lastAfter": ["2000000000007"],
+        "pendingAfter": ["0"]
+      }
+    },
+    {
+      "name": "two-active-tiers",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "3",
+        "acc": ["1000000000000", "2000000000000"],
+        "last": ["0", "1000000000000"],
+        "pending": ["2", "4"],
+        "vault": "20"
+      },
+      "expected": {
+        "earned": ["3", "3"],
+        "scaledRemainders": ["0", "0"],
+        "payout": "12",
+        "vaultAfter": "8",
+        "lastAfter": ["1000000000000", "2000000000000"],
+        "pendingAfter": ["0", "0"]
+      }
+    },
+    {
+      "name": "pending-with-no-tokens",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "0",
+        "acc": ["1000000000000"],
+        "last": ["0"],
+        "pending": ["7"],
+        "vault": "7"
+      },
+      "expected": {
+        "earned": ["0"],
+        "scaledRemainders": ["0"],
+        "payout": "7",
+        "vaultAfter": "0",
+        "lastAfter": ["1000000000000"],
+        "pendingAfter": ["0"]
+      }
+    },
+    {
+      "name": "already-snapshotted-pending",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "10",
+        "acc": ["1000000000000"],
+        "last": ["1000000000000"],
+        "pending": ["2"],
+        "vault": "5"
+      },
+      "expected": {
+        "earned": ["0"],
+        "scaledRemainders": ["0"],
+        "payout": "2",
+        "vaultAfter": "3",
+        "lastAfter": ["1000000000000"],
+        "pendingAfter": ["0"]
+      }
+    },
+    {
+      "name": "fractional-earnings-plus-pending",
+      "note": "The successful pending payout also advances last_acc, dropping this fractional entitlement.",
+      "runtime": true,
+      "input": {
+        "balance": "3",
+        "acc": ["333333333333"],
+        "last": ["0"],
+        "pending": ["1"],
+        "vault": "2"
+      },
+      "expected": {
+        "earned": ["0"],
+        "scaledRemainders": ["999999999999"],
+        "payout": "1",
+        "vaultAfter": "1",
+        "lastAfter": ["333333333333"],
+        "pendingAfter": ["0"]
+      }
+    },
+    {
+      "name": "round-down-positive",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "1",
+        "acc": ["1500000000000"],
+        "last": ["0"],
+        "pending": ["0"],
+        "vault": "2"
+      },
+      "expected": {
+        "earned": ["1"],
+        "scaledRemainders": ["500000000000"],
+        "payout": "1",
+        "vaultAfter": "1",
+        "lastAfter": ["1500000000000"],
+        "pendingAfter": ["0"]
+      }
+    },
+    {
+      "name": "balance-times-fraction",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "2",
+        "acc": ["750000000000"],
+        "last": ["0"],
+        "pending": ["0"],
+        "vault": "2"
+      },
+      "expected": {
+        "earned": ["1"],
+        "scaledRemainders": ["500000000000"],
+        "payout": "1",
+        "vaultAfter": "1",
+        "lastAfter": ["750000000000"],
+        "pendingAfter": ["0"]
+      }
+    },
+    {
+      "name": "per-tier-floor",
+      "note": "Two 0.6-unit tier entitlements floor independently, not after summing.",
+      "runtime": true,
+      "input": {
+        "balance": "1",
+        "acc": ["600000000000", "600000000000"],
+        "last": ["0", "0"],
+        "pending": ["1", "0"],
+        "vault": "2"
+      },
+      "expected": {
+        "earned": ["0", "0"],
+        "scaledRemainders": ["600000000000", "600000000000"],
+        "payout": "1",
+        "vaultAfter": "1",
+        "lastAfter": ["600000000000", "600000000000"],
+        "pendingAfter": ["0", "0"]
+      }
+    },
+    {
+      "name": "maximum-valid-u64-payout",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "18446744073709551615",
+        "acc": ["1000000000000"],
+        "last": ["0"],
+        "pending": ["0"],
+        "vault": "18446744073709551615"
+      },
+      "expected": {
+        "earned": ["18446744073709551615"],
+        "scaledRemainders": ["0"],
+        "payout": "18446744073709551615",
+        "vaultAfter": "0",
+        "lastAfter": ["1000000000000"],
+        "pendingAfter": ["0"]
+      }
+    },
+    {
+      "name": "max-balance-small-delta",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "18446744073709551615",
+        "acc": ["1"],
+        "last": ["0"],
+        "pending": ["0"],
+        "vault": "18446744"
+      },
+      "expected": {
+        "earned": ["18446744"],
+        "scaledRemainders": ["73709551615"],
+        "payout": "18446744",
+        "vaultAfter": "0",
+        "lastAfter": ["1"],
+        "pendingAfter": ["0"]
+      }
+    },
+    {
+      "name": "max-accumulator-zero-delta",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "1",
+        "acc": ["340282366920938463463374607431768211455"],
+        "last": ["340282366920938463463374607431768211455"],
+        "pending": ["1"],
+        "vault": "1"
+      },
+      "expected": {
+        "earned": ["0"],
+        "scaledRemainders": ["0"],
+        "payout": "1",
+        "vaultAfter": "0",
+        "lastAfter": ["340282366920938463463374607431768211455"],
+        "pendingAfter": ["0"]
+      }
+    },
+    {
+      "name": "inactive-slots-untouched",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "1",
+        "acc": ["1000000000000", "999", "999", "999", "999"],
+        "last": ["0", "0", "0", "0", "0"],
+        "pending": ["0", "77", "88", "99", "100"],
+        "vault": "1",
+        "tierCount": 1
+      },
+      "expected": {
+        "earned": ["1"],
+        "scaledRemainders": ["0"],
+        "payout": "1",
+        "vaultAfter": "0",
+        "lastAfter": ["1000000000000", "0", "0", "0", "0"],
+        "pendingAfter": ["0", "77", "88", "99", "100"]
+      }
+    },
+    {
+      "name": "five-active-tiers",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "1",
+        "acc": [
+          "1000000000000",
+          "1000000000000",
+          "1000000000000",
+          "1000000000000",
+          "1000000000000"
+        ],
+        "last": ["0", "0", "0", "0", "0"],
+        "pending": ["0", "0", "0", "0", "0"],
+        "vault": "5"
+      },
+      "expected": {
+        "earned": ["1", "1", "1", "1", "1"],
+        "scaledRemainders": ["0", "0", "0", "0", "0"],
+        "payout": "5",
+        "vaultAfter": "0",
+        "lastAfter": [
+          "1000000000000",
+          "1000000000000",
+          "1000000000000",
+          "1000000000000",
+          "1000000000000"
+        ],
+        "pendingAfter": ["0", "0", "0", "0", "0"]
+      }
+    }
+  ],
+  "sequences": [
+    {
+      "name": "claim-before-and-after-next-deposit",
+      "note": "",
+      "input": {
+        "thresholds": ["18446744073709551615"],
+        "entitlementUnits": "10",
+        "balance": "10",
+        "deposits": ["20", "30"],
+        "claimAfterDeposits": [1, 2]
+      },
+      "expected": {
+        "outcomes": [
+          {
+            "payout": "20"
+          },
+          {
+            "payout": "30"
+          }
+        ],
+        "totalClaimed": "50",
+        "vault": "0",
+        "totalDeposited": "50",
+        "acc": ["5000000000000"],
+        "last": ["5000000000000"],
+        "pending": ["0"]
+      }
+    },
+    {
+      "name": "one-claim-after-two-deposits",
+      "note": "",
+      "input": {
+        "thresholds": ["18446744073709551615"],
+        "entitlementUnits": "10",
+        "balance": "10",
+        "deposits": ["20", "30"],
+        "claimAfterDeposits": [2]
+      },
+      "expected": {
+        "outcomes": [
+          {
+            "payout": "50"
+          }
+        ],
+        "totalClaimed": "50",
+        "vault": "0",
+        "totalDeposited": "50",
+        "acc": ["5000000000000"],
+        "last": ["5000000000000"],
+        "pending": ["0"]
+      }
+    },
+    {
+      "name": "spanning-tiers-with-successive-claims",
+      "note": "",
+      "input": {
+        "thresholds": ["100", "18446744073709551615"],
+        "entitlementUnits": "10",
+        "balance": "10",
+        "deposits": ["150", "50"],
+        "claimAfterDeposits": [1, 2]
+      },
+      "expected": {
+        "outcomes": [
+          {
+            "payout": "150"
+          },
+          {
+            "payout": "50"
+          }
+        ],
+        "totalClaimed": "200",
+        "vault": "0",
+        "totalDeposited": "200",
+        "acc": ["10000000000000", "10000000000000"],
+        "last": ["10000000000000", "10000000000000"],
+        "pending": ["0", "0"]
+      }
+    },
+    {
+      "name": "three-holder-units-rounding",
+      "note": "Each deposit adds floor(1e12/3)=333333333333. First claim earns floor(3*333333333333/1e12)=0; second earns 1 and snapshots 666666666666; third again earns 0. The second successful claim discards its fractional residue.",
+      "input": {
+        "thresholds": ["18446744073709551615"],
+        "entitlementUnits": "3",
+        "balance": "3",
+        "deposits": ["1", "1", "1"],
+        "claimAfterDeposits": [1, 2, 3]
+      },
+      "expected": {
+        "outcomes": [
+          {
+            "error": "NothingToClaim"
+          },
+          {
+            "payout": "1"
+          },
+          {
+            "error": "NothingToClaim"
+          }
+        ],
+        "totalClaimed": "1",
+        "vault": "2",
+        "totalDeposited": "3",
+        "acc": ["999999999999"],
+        "last": ["666666666666"],
+        "pending": ["0"]
+      }
+    },
+    {
+      "name": "frequent-claim-rounding",
+      "note": "Each deposit earns 1.5 units; separate claims pay 1 + 1, not 3.",
+      "input": {
+        "thresholds": ["18446744073709551615"],
+        "entitlementUnits": "2",
+        "balance": "1",
+        "deposits": ["3", "3"],
+        "claimAfterDeposits": [1, 2]
+      },
+      "expected": {
+        "outcomes": [
+          {
+            "payout": "1"
+          },
+          {
+            "payout": "1"
+          }
+        ],
+        "totalClaimed": "2",
+        "vault": "4",
+        "totalDeposited": "6",
+        "acc": ["3000000000000"],
+        "last": ["3000000000000"],
+        "pending": ["0"]
+      }
+    },
+    {
+      "name": "delayed-claim-rounding",
+      "note": "Same deposits and holder balance as frequent-claim-rounding; one claim pays 3.",
+      "input": {
+        "thresholds": ["18446744073709551615"],
+        "entitlementUnits": "2",
+        "balance": "1",
+        "deposits": ["3", "3"],
+        "claimAfterDeposits": [2]
+      },
+      "expected": {
+        "outcomes": [
+          {
+            "payout": "3"
+          }
+        ],
+        "totalClaimed": "3",
+        "vault": "3",
+        "totalDeposited": "6",
+        "acc": ["3000000000000"],
+        "last": ["3000000000000"],
+        "pending": ["0"]
+      }
+    },
+    {
+      "name": "zero-deposit-then-positive",
+      "note": "",
+      "input": {
+        "thresholds": ["18446744073709551615"],
+        "entitlementUnits": "1",
+        "balance": "1",
+        "deposits": ["0", "5"],
+        "claimAfterDeposits": [1, 2]
+      },
+      "expected": {
+        "outcomes": [
+          {
+            "error": "NothingToClaim"
+          },
+          {
+            "payout": "5"
+          }
+        ],
+        "totalClaimed": "5",
+        "vault": "0",
+        "totalDeposited": "5",
+        "acc": ["5000000000000"],
+        "last": ["5000000000000"],
+        "pending": ["0"]
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "name": "no-claimable-amount",
+      "operation": "claim",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "1",
+        "acc": ["0"],
+        "last": ["0"],
+        "pending": ["0"],
+        "vault": "1"
+      },
+      "expectedError": "NothingToClaim"
+    },
+    {
+      "name": "fraction-only-no-state-update",
+      "operation": "claim",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "1",
+        "acc": ["600000000000"],
+        "last": ["0"],
+        "pending": ["0"],
+        "vault": "1"
+      },
+      "expectedError": "NothingToClaim"
+    },
+    {
+      "name": "insufficient-vault",
+      "operation": "claim",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "10",
+        "acc": ["1000000000000"],
+        "last": ["0"],
+        "pending": ["0"],
+        "vault": "9"
+      },
+      "expectedError": "InsufficientVaultFunds"
+    },
+    {
+      "name": "frozen-record",
+      "operation": "claim",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "1",
+        "acc": ["1000000000000"],
+        "last": ["0"],
+        "pending": ["0"],
+        "vault": "1",
+        "frozen": true
+      },
+      "expectedError": "FrozenPosition"
+    },
+    {
+      "name": "accumulator-regression",
+      "operation": "claim",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "1",
+        "acc": ["0"],
+        "last": ["1"],
+        "pending": ["0"],
+        "vault": "1"
+      },
+      "expectedError": "MathOverflow"
+    },
+    {
+      "name": "u128-product-overflow",
+      "operation": "claim",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "18446744073709551615",
+        "acc": ["340282366920938463463374607431768211455"],
+        "last": ["0"],
+        "pending": ["0"],
+        "vault": "1"
+      },
+      "expectedError": "MathOverflow"
+    },
+    {
+      "name": "pending-add-overflow",
+      "operation": "claim",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "1",
+        "acc": ["1000000000000"],
+        "last": ["0"],
+        "pending": ["18446744073709551615"],
+        "vault": "18446744073709551615"
+      },
+      "expectedError": "MathOverflow"
+    },
+    {
+      "name": "cross-tier-payout-overflow",
+      "operation": "claim",
+      "note": "",
+      "runtime": true,
+      "input": {
+        "balance": "1",
+        "acc": [
+          "18446744073709551615000000000000",
+          "18446744073709551615000000000000"
+        ],
+        "last": ["0", "0"],
+        "pending": ["0", "0"],
+        "vault": "18446744073709551615"
+      },
+      "expectedError": "MathOverflow"
+    },
+    {
+      "name": "unsafe-earned-narrowing",
+      "operation": "claim",
+      "note": "Mathematical earned = 2^64; existing Rust casts it to zero and pays only pending = 1.",
+      "runtime": true,
+      "input": {
+        "balance": "1",
+        "acc": ["18446744073709551616000000000000"],
+        "last": ["0"],
+        "pending": ["1"],
+        "vault": "1"
+      },
+      "expectedError": "NarrowingOverflow",
+      "discrepancy": {
+        "onChainPayout": "1",
+        "mathematicalEarned": "18446744073709551616"
+      }
+    },
+    {
+      "name": "negative-deposit",
+      "operation": "waterfall",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "thresholds": ["18446744073709551615"],
+        "totalBefore": "0",
+        "deposit": "-1"
+      },
+      "expectedError": "InvalidInput"
+    },
+    {
+      "name": "floating-point-input",
+      "operation": "waterfall",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "thresholds": ["18446744073709551615"],
+        "totalBefore": "0",
+        "deposit": 1.5
+      },
+      "expectedError": "InvalidInput"
+    },
+    {
+      "name": "deposit-cumulative-overflow",
+      "operation": "waterfall",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "thresholds": ["18446744073709551615"],
+        "totalBefore": "18446744073709551615",
+        "deposit": "1"
+      },
+      "expectedError": "MathOverflow"
+    },
+    {
+      "name": "empty-tiers",
+      "operation": "waterfall",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "thresholds": [],
+        "totalBefore": "0",
+        "deposit": "1"
+      },
+      "expectedError": "InvalidTierCount"
+    },
+    {
+      "name": "too-many-tiers",
+      "operation": "waterfall",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "thresholds": ["1", "2", "3", "4", "5", "18446744073709551615"],
+        "totalBefore": "0",
+        "deposit": "1"
+      },
+      "expectedError": "InvalidTierCount"
+    },
+    {
+      "name": "equal-thresholds",
+      "operation": "waterfall",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "thresholds": ["100", "100", "18446744073709551615"],
+        "totalBefore": "0",
+        "deposit": "1"
+      },
+      "expectedError": "ThresholdsNotIncreasing"
+    },
+    {
+      "name": "descending-thresholds",
+      "operation": "waterfall",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "thresholds": ["100", "50", "18446744073709551615"],
+        "totalBefore": "0",
+        "deposit": "1"
+      },
+      "expectedError": "ThresholdsNotIncreasing"
+    },
+    {
+      "name": "capped-final-tier",
+      "operation": "waterfall",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "thresholds": ["100"],
+        "totalBefore": "0",
+        "deposit": "1"
+      },
+      "expectedError": "LastTierMustBeUncapped"
+    },
+    {
+      "name": "threshold-outside-u64",
+      "operation": "waterfall",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "thresholds": ["18446744073709551616"],
+        "totalBefore": "0",
+        "deposit": "1"
+      },
+      "expectedError": "InvalidInput"
+    },
+    {
+      "name": "split-sum-not-10000",
+      "operation": "allocateSplits",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "amount": "1",
+        "bps": ["9999"]
+      },
+      "expectedError": "SplitsMustSumTo10000"
+    },
+    {
+      "name": "empty-splits",
+      "operation": "allocateSplits",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "amount": "1",
+        "bps": []
+      },
+      "expectedError": "InvalidSplitCount"
+    },
+    {
+      "name": "too-many-splits",
+      "operation": "allocateSplits",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "amount": "1",
+        "bps": ["2000", "2000", "2000", "2000", "2000"]
+      },
+      "expectedError": "InvalidSplitCount"
+    },
+    {
+      "name": "bps-outside-u16",
+      "operation": "allocateSplits",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "amount": "1",
+        "bps": ["65536"]
+      },
+      "expectedError": "InvalidInput"
+    },
+    {
+      "name": "zero-denominator",
+      "operation": "accrue",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "holderRevenue": "1",
+        "entitlementUnits": "0",
+        "accumulator": "0"
+      },
+      "expectedError": "InvalidSupply"
+    },
+    {
+      "name": "accumulator-add-overflow",
+      "operation": "accrue",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "holderRevenue": "1",
+        "entitlementUnits": "1000000000000",
+        "accumulator": "340282366920938463463374607431768211455"
+      },
+      "expectedError": "MathOverflow"
+    },
+    {
+      "name": "claim-array-length-mismatch",
+      "operation": "claim",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "balance": "1",
+        "acc": ["1000000000000"],
+        "last": ["0"],
+        "pending": [],
+        "vault": "1"
+      },
+      "expectedError": "InvalidTierCount"
+    },
+    {
+      "name": "claim-zero-tier-count",
+      "operation": "claim",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "balance": "1",
+        "acc": ["1000000000000"],
+        "last": ["0"],
+        "pending": ["0"],
+        "vault": "1",
+        "tierCount": 0
+      },
+      "expectedError": "InvalidTierCount"
+    },
+    {
+      "name": "claim-value-outside-u128",
+      "operation": "claim",
+      "note": "",
+      "runtime": false,
+      "input": {
+        "balance": "1",
+        "acc": ["340282366920938463463374607431768211456"],
+        "last": ["0"],
+        "pending": ["0"],
+        "vault": "1"
+      },
+      "expectedError": "InvalidInput"
+    }
+  ]
+}

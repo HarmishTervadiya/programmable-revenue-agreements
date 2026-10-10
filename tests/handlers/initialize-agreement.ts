@@ -8,8 +8,11 @@ import {
 } from "@solana/spl-token";
 import { expect } from "chai";
 import { SharedCtx, sendWithRetry } from "../helpers";
+import type { ProgrammableRevenueAgreement } from "../../target/types/programmable_revenue_agreement";
 
-function twoTiers(provider: anchor.AnchorProvider) {
+type TierInput = anchor.IdlTypes<ProgrammableRevenueAgreement>["tierInput"];
+
+function twoTiers(provider: anchor.AnchorProvider): TierInput[] {
   return [
     {
       threshold: new anchor.BN(10_000_000_000),
@@ -19,7 +22,7 @@ function twoTiers(provider: anchor.AnchorProvider) {
       threshold: new anchor.BN("18446744073709551615"),
       splits: [
         { party: { holders: {} }, bps: 5_000 },
-        { party: { wallet: provider.wallet.publicKey }, bps: 5_000 },
+        { party: { wallet: [provider.wallet.publicKey] }, bps: 5_000 },
       ],
     },
   ];
@@ -162,6 +165,14 @@ export function defineInitializeTests(ctx: SharedCtx) {
 
     const t1 = await program.account.tierState.fetch(ctx.tierPdas[1]);
     expect(t1.splitCount).to.equal(2);
+    expect(t1.splits[0].party).to.have.property("holders");
+    expect(t1.splits[0].bps).to.equal(5_000);
+    expect(t1.splits[1].party).to.have.property("wallet");
+    expect(t1.splits[1].party.wallet[0].toBase58()).to.equal(
+      provider.wallet.publicKey.toBase58(),
+    );
+    expect(t1.splits[1].bps).to.equal(5_000);
+    expect(t1.splits[1].owed.toString()).to.equal("0");
 
     const tBal = await provider.connection.getTokenAccountBalance(ctx.treasury);
     expect(tBal.value.amount).to.equal(ctx.supply.toString());
@@ -186,7 +197,7 @@ export function defineInitializeTests(ctx: SharedCtx) {
     const expTime = new anchor.BN(1_800_000_000);
     const endCap = new anchor.BN(100_000_000_000);
     const claimWindow = new anchor.BN(2_592_000);
-    const fullTiers = [
+    const fullTiers: TierInput[] = [
       {
         threshold: new anchor.BN(1_000_000_000),
         splits: [{ party: { holders: {} }, bps: 10_000 }],
@@ -195,25 +206,25 @@ export function defineInitializeTests(ctx: SharedCtx) {
         threshold: new anchor.BN(5_000_000_000),
         splits: [
           { party: { holders: {} }, bps: 7_500 },
-          { party: { wallet: fullDepositor }, bps: 2_500 },
+          { party: { wallet: [fullDepositor] }, bps: 2_500 },
         ],
       },
       {
         threshold: new anchor.BN(10_000_000_000),
         splits: [
           { party: { holders: {} }, bps: 5_000 },
-          { party: { wallet: provider.wallet.publicKey }, bps: 5_000 },
+          { party: { wallet: [provider.wallet.publicKey] }, bps: 5_000 },
         ],
       },
       {
         threshold: new anchor.BN(20_000_000_000),
-        splits: [{ party: { wallet: fullDepositor }, bps: 10_000 }],
+        splits: [{ party: { wallet: [fullDepositor] }, bps: 10_000 }],
       },
       {
         threshold: new anchor.BN("18446744073709551615"),
         splits: [
           { party: { holders: {} }, bps: 3_000 },
-          { party: { wallet: provider.wallet.publicKey }, bps: 7_000 },
+          { party: { wallet: [provider.wallet.publicKey] }, bps: 7_000 },
         ],
       },
     ];
@@ -230,10 +241,10 @@ export function defineInitializeTests(ctx: SharedCtx) {
             startTime,
             expTime,
             endCap,
+            claimWindow,
             fullDepositor,
             ctx.complianceAdmin,
             ctx.paymentDestination!,
-            claimWindow,
           )
           .accountsPartial(initAccountsFor(ctx, fullId, fullMint.publicKey))
           .signers([fullMint])
@@ -257,6 +268,34 @@ export function defineInitializeTests(ctx: SharedCtx) {
     expect(cfg.depositor.toBase58()).to.equal(fullDepositor.toBase58());
     expect(cfg.totalDeposited.toNumber()).to.equal(0);
     expect(cfg.sharesSold.toNumber()).to.equal(0);
+    const fullPdas = pdasFor(
+      program,
+      provider.wallet.publicKey,
+      fullId,
+      fullMint.publicKey,
+    );
+    for (let i = 0; i < fullTiers.length; i++) {
+      const tier = await program.account.tierState.fetch(fullPdas.tierPdas[i]);
+      const expectedTier = fullTiers[i];
+      expect(tier.threshold.toString()).to.equal(
+        expectedTier.threshold.toString(),
+      );
+      expect(tier.splitCount).to.equal(expectedTier.splits.length);
+      for (let j = 0; j < expectedTier.splits.length; j++) {
+        const expected = expectedTier.splits[j];
+        const actual = tier.splits[j];
+        expect(actual.bps).to.equal(expected.bps);
+        expect(actual.owed.toString()).to.equal("0");
+        if ("wallet" in expected.party) {
+          expect(actual.party).to.have.property("wallet");
+          expect(actual.party.wallet[0].toBase58()).to.equal(
+            expected.party.wallet[0].toBase58(),
+          );
+        } else {
+          expect(actual.party).to.have.property("holders");
+        }
+      }
+    }
   });
 
   it("Reject empty tiers", async () => {

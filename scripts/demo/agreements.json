@@ -1,0 +1,84 @@
+[
+  {
+    "name": "single-tier",
+    "agreementId": "1001",
+    "supply": "1000000000",
+    "sharePrice": "1000000",
+    "accessMode": "open",
+    "startTime": null,
+    "expTime": "4102444800",
+    "endCap": null,
+    "claimWindow": null,
+    "tiers": [
+      {
+        "threshold": "18446744073709551615",
+        "splits": [{ "party": "holders", "bps": 10000 }]
+      }
+    ]
+  },
+  {
+    "name": "waterfall",
+    "agreementId": "1002",
+    "supply": "1000000000",
+    "sharePrice": "1000000",
+    "accessMode": "open",
+    "startTime": null,
+    "expTime": "4102444800",
+    "endCap": null,
+    "claimWindow": null,
+    "tiers": [
+      {
+        "threshold": "100000000",
+        "splits": [{ "party": "holders", "bps": 10000 }]
+      },
+      {
+        "threshold": "500000000",
+        "splits": [
+          { "party": "holders", "bps": 7000 },
+          { "party": "creator", "bps": 3000 }
+        ]
+      },
+      {
+        "threshold": "18446744073709551615",
+        "splits": [
+          { "party": "holders", "bps": 3000 },
+          { "party": "creator", "bps": 7000 }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "claim-window",
+    "agreementId": "1003",
+    "supply": "1000000000",
+    "sharePrice": "1000000",
+    "accessMode": "open",
+    "startTime": null,
+    "expTime": "4102444800",
+    "endCap": "1000000000",
+    "claimWindow": "3600",
+    "tiers": [
+      {
+        "threshold": "18446744073709551615",
+        "splits": [{ "party": "holders", "bps": 10000 }]
+      }
+    ]
+  },
+  {
+    "name": "cap-expiry",
+    "agreementId": "1004",
+    "supply": "1000000000",
+    "sharePrice": "1000000",
+    "accessMode": "open",
+    "startTime": null,
+    "expTime": null,
+    "endCap": "250000000",
+    "claimWindow": null,
+    "tiers": [
+      {
+        "threshold": "18446744073709551615",
+        "splits": [{ "party": "holders", "bps": 10000 }]
+      }
+    ]
+  }
+]

@@ -30,6 +30,26 @@ pub enum PraErrorCode {
     InsufficientVaultFunds,
     #[msg("Math overflow")]
     MathOverflow,
+    #[msg("Only the compliance admin may change position freeze state")]
+    UnauthorizedComplianceAdmin,
+    #[msg("Position is already frozen")]
+    PositionAlreadyFrozen,
+    #[msg("Position is already unfrozen")]
+    PositionAlreadyUnfrozen,
+    #[msg("Agreement must be active")]
+    AgreementNotActive,
+    #[msg("Neither expiry time nor cumulative revenue cap has been reached")]
+    EndConditionNotMet,
+    #[msg("Only the creator may close the agreement")]
+    UnauthorizedCreator,
+    #[msg("Agreement must be expired")]
+    AgreementNotExpired,
+    #[msg("Claim deadline has not elapsed and vault exceeds the dust allowance")]
+    ClaimWindowStillOpen,
+    #[msg("Treasury must be empty before closure")]
+    TreasuryNotEmpty,
+    #[msg("Vault must be empty before closure")]
+    VaultNotEmpty,
     #[msg("Agreement is not active")]
     AgreementNotActive,
     #[msg("Sale has not started yet")]
