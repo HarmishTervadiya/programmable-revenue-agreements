@@ -9,6 +9,7 @@ export interface SharedCtx {
   supply: anchor.BN;
   sharePrice: anchor.BN;
   shareMintKeypair: anchor.web3.Keypair;
+  depositorKeypair: anchor.web3.Keypair;
   depositor: anchor.web3.PublicKey;
   complianceAdmin: anchor.web3.PublicKey;
   config: anchor.web3.PublicKey;

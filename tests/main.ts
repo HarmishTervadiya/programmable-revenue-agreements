@@ -3,6 +3,8 @@ import { Program } from "@coral-xyz/anchor";
 import { ProgrammableRevenueAgreement } from "../target/types/programmable_revenue_agreement";
 import { SharedCtx } from "./helpers";
 import { defineInitializeTests } from "./handlers/initialize-agreement";
+import { definePurchaseTests } from "./handlers/purchase-share";
+import { defineDepositTests } from "./handlers/deposit-revenue";
 
 describe("programmable-revenue-agreement", () => {
   const provider = anchor.AnchorProvider.env();
@@ -46,6 +48,8 @@ describe("programmable-revenue-agreement", () => {
       )[0],
   );
 
+  const depositorKeypair = anchor.web3.Keypair.generate();
+
   const ctx: SharedCtx = {
     provider,
     program,
@@ -53,7 +57,8 @@ describe("programmable-revenue-agreement", () => {
     supply: new anchor.BN(1_000_000_000),
     sharePrice: new anchor.BN(10_000_000),
     shareMintKeypair,
-    depositor: anchor.web3.Keypair.generate().publicKey,
+    depositorKeypair,
+    depositor: depositorKeypair.publicKey,
     complianceAdmin: anchor.web3.Keypair.generate().publicKey,
     config,
     vault,
@@ -63,4 +68,6 @@ describe("programmable-revenue-agreement", () => {
   };
 
   defineInitializeTests(ctx);
+  definePurchaseTests(ctx);
+  defineDepositTests(ctx);
 });
