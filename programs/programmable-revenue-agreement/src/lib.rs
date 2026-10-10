@@ -35,6 +35,15 @@ pub mod programmable_revenue_agreement {
         ctx.accounts.claim()
     }
 
+    pub fn purchase_share(ctx: Context<PurchaseShare>, amount: u64) -> Result<()> {
+        let claim_bump = ctx.bumps.claim_record;
+        ctx.accounts.purchase(amount, claim_bump)
+    }
+
+    pub fn deposit_revenue(ctx: Context<DepositRevenue>, amount: u64) -> Result<()> {
+        ctx.accounts.deposit(amount)
+    }
+
     pub fn initialize_agreement(
         ctx: Context<InitializeAgreement>,
         agreement_id: u64,

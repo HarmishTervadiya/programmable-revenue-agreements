@@ -50,4 +50,16 @@ pub enum PraErrorCode {
     TreasuryNotEmpty,
     #[msg("Vault must be empty before closure")]
     VaultNotEmpty,
+    #[msg("Agreement is not active")]
+    AgreementNotActive,
+    #[msg("Sale has not started yet")]
+    SaleNotStarted,
+    #[msg("Access denied: agreement is allowlist-gated")]
+    AccessDenied,
+    #[msg("Treasury holds fewer shares than requested")]
+    InsufficientTreasuryShares,
+    #[msg("Amount must be above zero")]
+    InvalidAmount,
+    #[msg("Only the designated depositor can deposit")]
+    UnauthorizedDepositor,
 }
