@@ -30,6 +30,10 @@ pub enum PraErrorCode {
     InsufficientVaultFunds,
     #[msg("Math overflow")]
     MathOverflow,
+    #[msg("Claim record is missing for a transfer party")]
+    MissingClaimRecord,
+    #[msg("Transfer hook invoked outside a token transfer")]
+    InvalidHookState,
     #[msg("Only the compliance admin may change position freeze state")]
     UnauthorizedComplianceAdmin,
     #[msg("Position is already frozen")]
@@ -50,8 +54,6 @@ pub enum PraErrorCode {
     TreasuryNotEmpty,
     #[msg("Vault must be empty before closure")]
     VaultNotEmpty,
-    #[msg("Agreement is not active")]
-    AgreementNotActive,
     #[msg("Sale has not started yet")]
     SaleNotStarted,
     #[msg("Access denied: agreement is allowlist-gated")]

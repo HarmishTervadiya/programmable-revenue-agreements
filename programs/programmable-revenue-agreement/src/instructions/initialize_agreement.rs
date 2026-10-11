@@ -6,18 +6,24 @@ use anchor_spl::{
 
 use crate::error::PraErrorCode;
 use crate::{
-    AccessMode, AgreementConfig, AgreementStatus, TierInput, AGREEMENT_SEED, EXTRA_METAS, MAX_BPS,
-    MAX_SPLITS, MAX_TIERS, TIER_SEED, TREASURY_SEED, VAULT_SEED,
+    AccessMode, AgreementConfig, AgreementStatus, TierInput, AGREEMENT_SEED, CLAIM_SEED,
+    EXTRA_METAS, MAX_BPS, MAX_SPLITS, MAX_TIERS, TIER_SEED, TREASURY_SEED, VAULT_SEED,
 };
 
 use anchor_lang::solana_program::{program::invoke_signed, rent::Rent, system_instruction};
 use anchor_spl::token_2022::{
+    spl_token_2022::{
+        extension::ExtensionType,
+        instruction::AuthorityType,
+        state::{Account as TokenAccountState, AccountState, Mint as MintState},
+    },
     InitializeAccount3, InitializeMint2, MintTo, SetAuthority, ThawAccount,
 };
 use anchor_spl::token_2022_extensions::{
     default_account_state::DefaultAccountStateInitialize, transfer_hook::TransferHookInitialize,
 };
 use spl_tlv_account_resolution::state::ExtraAccountMetaList;
+use spl_tlv_account_resolution::{account::ExtraAccountMeta, seeds::Seed};
 use spl_transfer_hook_interface::instruction::ExecuteInstruction;
 
 use crate::state::{Party, Split, TierState};
@@ -229,10 +235,6 @@ impl<'info> InitializeAgreement<'info> {
     }
 
     fn init_share_mint(&self) -> Result<()> {
-        use anchor_spl::token_2022::spl_token_2022::{
-            extension::ExtensionType, state::Mint as MintState,
-        };
-
         let space = ExtensionType::try_calculate_account_len::<MintState>(&[
             ExtensionType::DefaultAccountState,
             ExtensionType::TransferHook,
@@ -272,7 +274,6 @@ impl<'info> InitializeAgreement<'info> {
     }
 
     fn default_state_config(&self) -> Result<()> {
-        use anchor_spl::token_2022::spl_token_2022::state::AccountState;
         anchor_spl::token_2022_extensions::default_account_state::default_account_state_initialize(
             CpiContext::new(
                 self.token_2022_program.key(),
@@ -301,11 +302,55 @@ impl<'info> InitializeAgreement<'info> {
     }
 
     fn init_extra_metas(&self) -> Result<()> {
+        // Hook accounts, in the order the client appends them:
+        // config, sender record, receiver record, tier0..4.
+        let config_key = self.agreement_config.key();
         let (_pda, bump) = Pubkey::find_program_address(
             &[EXTRA_METAS, self.share_mint.key().as_ref()],
             &crate::ID,
         );
-        let space = ExtraAccountMetaList::size_of(0)
+        let mut metas = Vec::with_capacity(8);
+        metas.push(
+            ExtraAccountMeta::new_with_pubkey(&config_key, false, false)
+                .map_err(|_| error!(ErrorCode::AccountDidNotSerialize))?,
+        );
+        for account_index in [0u8, 2u8] {
+            metas.push(
+                ExtraAccountMeta::new_with_seeds(
+                    &[
+                        Seed::Literal {
+                            bytes: CLAIM_SEED.to_vec(),
+                        },
+                        Seed::AccountKey { index: 5 },
+                        Seed::AccountData {
+                            account_index,
+                            data_index: 32,
+                            length: 32,
+                        },
+                    ],
+                    false,
+                    true,
+                )
+                .map_err(|_| error!(ErrorCode::AccountDidNotSerialize))?,
+            );
+        }
+        for i in 0u8..5 {
+            metas.push(
+                ExtraAccountMeta::new_with_seeds(
+                    &[
+                        Seed::Literal {
+                            bytes: TIER_SEED.to_vec(),
+                        },
+                        Seed::AccountKey { index: 5 },
+                        Seed::Literal { bytes: vec![i] },
+                    ],
+                    false,
+                    false,
+                )
+                .map_err(|_| error!(ErrorCode::AccountDidNotSerialize))?,
+            );
+        }
+        let space = ExtraAccountMetaList::size_of(metas.len())
             .map_err(|_| error!(ErrorCode::AccountDidNotSerialize))?;
         let lamports = Rent::get()?.minimum_balance(space);
         let create_ix = system_instruction::create_account(
@@ -328,9 +373,9 @@ impl<'info> InitializeAgreement<'info> {
             &[seeds],
         )?;
 
-        // Empty until ClaimRecord shape locks.
+        // ClaimRecord / tier metas used by every transfer.
         let mut data = self.extra_metas.try_borrow_mut_data()?;
-        ExtraAccountMetaList::init::<ExecuteInstruction>(&mut data, &[])
+        ExtraAccountMetaList::init::<ExecuteInstruction>(&mut data, &metas)
             .map_err(|_| error!(ErrorCode::AccountDidNotSerialize))?;
         Ok(())
     }
@@ -338,12 +383,20 @@ impl<'info> InitializeAgreement<'info> {
     // First N slots from input, rest empty (ignored via tier_count).
     fn init_tier_states(&mut self, tiers: &[TierInput]) -> Result<()> {
         let config_key = self.agreement_config.key();
-        Self::write_tier(&mut self.tier0, 0, tiers.get(0), config_key)?;
+        Self::write_tier(&mut self.tier0, 0, tiers.first(), config_key)?;
         Self::write_tier(&mut self.tier1, 1, tiers.get(1), config_key)?;
         Self::write_tier(&mut self.tier2, 2, tiers.get(2), config_key)?;
         Self::write_tier(&mut self.tier3, 3, tiers.get(3), config_key)?;
         Self::write_tier(&mut self.tier4, 4, tiers.get(4), config_key)?;
         Ok(())
+    }
+
+    fn empty_splits() -> [Split; MAX_SPLITS] {
+        std::array::from_fn(|_| Split {
+            party: Party::Holders,
+            bps: 0,
+            owed: 0,
+        })
     }
 
     fn write_tier(
@@ -355,28 +408,7 @@ impl<'info> InitializeAgreement<'info> {
         let (_, bump) =
             Pubkey::find_program_address(&[TIER_SEED, config_key.as_ref(), &[idx]], &crate::ID);
         if let Some(input) = input {
-            let mut arr = [
-                Split {
-                    party: Party::Holders,
-                    bps: 0,
-                    owed: 0,
-                },
-                Split {
-                    party: Party::Holders,
-                    bps: 0,
-                    owed: 0,
-                },
-                Split {
-                    party: Party::Holders,
-                    bps: 0,
-                    owed: 0,
-                },
-                Split {
-                    party: Party::Holders,
-                    bps: 0,
-                    owed: 0,
-                },
-            ];
+            let mut arr = Self::empty_splits();
             for (j, s) in input.splits.iter().enumerate() {
                 arr[j] = Split {
                     party: s.party.clone(),
@@ -401,28 +433,7 @@ impl<'info> InitializeAgreement<'info> {
                 threshold: 0,
                 filled: 0,
                 acc_per_token: 0,
-                splits: [
-                    Split {
-                        party: Party::Holders,
-                        bps: 0,
-                        owed: 0,
-                    },
-                    Split {
-                        party: Party::Holders,
-                        bps: 0,
-                        owed: 0,
-                    },
-                    Split {
-                        party: Party::Holders,
-                        bps: 0,
-                        owed: 0,
-                    },
-                    Split {
-                        party: Party::Holders,
-                        bps: 0,
-                        owed: 0,
-                    },
-                ],
+                splits: Self::empty_splits(),
                 split_count: 0,
                 bump,
             });
@@ -437,15 +448,10 @@ impl<'info> InitializeAgreement<'info> {
         config_bump: u8,
         treasury_bump: u8,
     ) -> Result<()> {
-        use anchor_spl::token_2022::spl_token_2022::instruction::AuthorityType;
-        use anchor_spl::token_2022::spl_token_2022::{
-            extension::ExtensionType, state::Account as TokenAccountState,
-        };
-
         let config_key = self.agreement_config.key();
         let creator_key = self.creator.key();
 
-        // Treasury must fit required account extensions (TransferHookAccount).
+        // Treasury needs room for the transfer-hook extension.
         let space = ExtensionType::try_calculate_account_len::<TokenAccountState>(&[
             ExtensionType::TransferHookAccount,
         ])
@@ -503,7 +509,6 @@ impl<'info> InitializeAgreement<'info> {
         );
         anchor_spl::token_2022::thaw_account(cpi)?;
 
-        let signer_seeds = &[config_seeds];
         let cpi = CpiContext::new_with_signer(
             self.token_2022_program.key(),
             MintTo {
@@ -516,7 +521,6 @@ impl<'info> InitializeAgreement<'info> {
         anchor_spl::token_2022::mint_to(cpi, supply)?;
 
         // Lock supply.
-        let signer_seeds = &[config_seeds];
         let cpi = CpiContext::new_with_signer(
             self.token_2022_program.key(),
             SetAuthority {

@@ -35,6 +35,11 @@ pub mod programmable_revenue_agreement {
         ctx.accounts.claim()
     }
 
+    #[instruction(discriminator = crate::HOOK_DISCRIMINATOR)]
+    pub fn transfer_hook(ctx: Context<TransferHook>, amount: u64) -> Result<()> {
+        ctx.accounts.execute(amount, &ctx.remaining_accounts)
+    }
+
     pub fn purchase_share(ctx: Context<PurchaseShare>, amount: u64) -> Result<()> {
         let claim_bump = ctx.bumps.claim_record;
         ctx.accounts.purchase(amount, claim_bump)

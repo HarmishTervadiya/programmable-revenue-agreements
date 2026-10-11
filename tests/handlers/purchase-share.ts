@@ -4,12 +4,12 @@ import {
   TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  createTransferCheckedInstruction,
   getAssociatedTokenAddressSync,
-  getOrCreateAssociatedTokenAccount,
   mintTo,
 } from "@solana/spl-token";
 import { expect } from "chai";
-import { SharedCtx, sendWithRetry } from "../helpers";
+import { SharedCtx, sendWithRetry, getOrCreateAtaWithRetry, fundUsdcToExact } from "../helpers";
 
 export function buyerShareAta(
   shareMint: anchor.web3.PublicKey,
@@ -64,7 +64,92 @@ export function purchaseAccountsFor(
   };
 }
 
-/// Fresh buyer: SOL for rent (ClaimRecord + ATA creation) + funded USDC ATA.
+// Second half of a purchase: top-level transfer using the delegate
+// approval from purchase_share. Runs as ix 2 so the hook fires cleanly.
+export function transferIxFor(
+  ctx: SharedCtx,
+  buyer: anchor.web3.PublicKey,
+  amount: anchor.BN,
+) {
+  const shareMint = ctx.shareMintKeypair.publicKey;
+  const buyerAta = buyerShareAta(shareMint, buyer);
+  const base = createTransferCheckedInstruction(
+    ctx.treasury,
+    shareMint,
+    buyerAta,
+    buyer,
+    BigInt(amount.toString()),
+    6,
+    [],
+    TOKEN_2022_PROGRAM_ID,
+  );
+  // Hook accounts in list order, then the hook program itself. The sender
+  // slot is just an address now (no account); the hook skips it anyway.
+  base.keys.push(
+    { pubkey: ctx.extraMetas, isSigner: false, isWritable: false },
+    { pubkey: ctx.config, isSigner: false, isWritable: false },
+    {
+      pubkey: claimPdaFor(ctx.program, ctx.config, ctx.config),
+      isSigner: false,
+      isWritable: true,
+    },
+    {
+      pubkey: claimPdaFor(ctx.program, ctx.config, buyer),
+      isSigner: false,
+      isWritable: true,
+    },
+    { pubkey: ctx.tierPdas[0], isSigner: false, isWritable: false },
+    { pubkey: ctx.tierPdas[1], isSigner: false, isWritable: false },
+    { pubkey: ctx.tierPdas[2], isSigner: false, isWritable: false },
+    { pubkey: ctx.tierPdas[3], isSigner: false, isWritable: false },
+    { pubkey: ctx.tierPdas[4], isSigner: false, isWritable: false },
+    { pubkey: ctx.program.programId, isSigner: false, isWritable: false },
+  );
+  return base;
+}
+
+// One atomic purchase: buy ix + transfer ix in a single tx.
+// If either fails the whole thing rolls back.
+export async function sendPurchaseWithTransfer(
+  ctx: SharedCtx,
+  buyerKeypair: anchor.web3.Keypair,
+  buyerUsdc: anchor.web3.PublicKey,
+  amount: anchor.BN,
+  label: string,
+): Promise<string> {
+  const { provider, program } = ctx;
+  const purchaseIx = await program.methods
+    .purchaseShare(amount)
+    .accountsPartial(
+      purchaseAccountsFor(ctx, buyerKeypair.publicKey, buyerUsdc),
+    )
+    .signers([buyerKeypair])
+    .instruction();
+  const transferIx = transferIxFor(ctx, buyerKeypair.publicKey, amount);
+  const payer = (provider.wallet as anchor.Wallet).payer;
+  return sendWithRetry(
+    provider,
+    async () => {
+      const { blockhash, lastValidBlockHeight } =
+        await provider.connection.getLatestBlockhash("confirmed");
+      const tx = new anchor.web3.Transaction({
+        feePayer: provider.wallet.publicKey,
+        blockhash,
+        lastValidBlockHeight,
+      });
+      tx.add(purchaseIx).add(transferIx);
+      return anchor.web3.sendAndConfirmTransaction(
+        provider.connection,
+        tx,
+        [payer, buyerKeypair],
+        { commitment: "confirmed", skipPreflight: false },
+      );
+    },
+    label,
+  );
+}
+
+/// Fresh buyer with SOL for rent plus a funded USDC account.
 export async function newFundedBuyer(
   ctx: SharedCtx,
   usdcAmount: bigint,
@@ -83,21 +168,21 @@ export async function newFundedBuyer(
   const fundTx = new anchor.web3.Transaction().add(fundIx);
   await sendWithRetry(provider, () => provider.sendAndConfirm(fundTx), "fund-buyer");
 
-  const ata = await getOrCreateAssociatedTokenAccount(
-    provider.connection,
-    payer,
+  const ata = await getOrCreateAtaWithRetry(
+    provider,
     ctx.paymentMint!,
     buyer.publicKey,
+    "fund-buyer",
   );
-  await mintTo(
-    provider.connection,
-    payer,
+  await fundUsdcToExact(
+    provider,
     ctx.paymentMint!,
-    ata.address,
+    ata,
     provider.wallet.publicKey,
     usdcAmount,
+    "fund-buyer",
   );
-  return { buyer, buyerUsdc: ata.address };
+  return { buyer, buyerUsdc: ata };
 }
 
 function freshPdas(
@@ -132,18 +217,8 @@ function freshPdas(
   return { config, treasury, extraMetas, tierPdas };
 }
 
-async function initFreshAgreement(
-  ctx: SharedCtx,
-  opts: {
-    accessMode: { open: {} } | { allowlist: {} };
-    startTime?: anchor.BN | null;
-  },
-): Promise<{ config: anchor.web3.PublicKey; shareMint: anchor.web3.Keypair }> {
-  const { provider, program } = ctx;
-  const agreementId = new anchor.BN(Math.floor(Math.random() * 1_000_000_000));
-  const shareMint = anchor.web3.Keypair.generate();
-  const p = freshPdas(ctx, agreementId, shareMint.publicKey);
-  const tiers = [
+function freshTiers(provider: anchor.AnchorProvider) {
+  return [
     {
       threshold: new anchor.BN(10_000_000_000),
       splits: [{ party: { holders: {} }, bps: 10_000 }],
@@ -156,6 +231,23 @@ async function initFreshAgreement(
       ],
     },
   ];
+}
+
+async function initFreshAgreement(
+  ctx: SharedCtx,
+  opts: {
+    accessMode: { open: {} } | { allowlist: {} };
+    startTime?: anchor.BN | null;
+  },
+): Promise<{
+  config: anchor.web3.PublicKey;
+  shareMint: anchor.web3.Keypair;
+  extraMetas: anchor.web3.PublicKey;
+}> {
+  const { provider, program } = ctx;
+  const agreementId = new anchor.BN(Math.floor(Math.random() * 1_000_000_000));
+  const shareMint = anchor.web3.Keypair.generate();
+  const p = freshPdas(ctx, agreementId, shareMint.publicKey);
   await sendWithRetry(
     provider,
     () =>
@@ -164,8 +256,11 @@ async function initFreshAgreement(
           agreementId,
           ctx.supply,
           ctx.sharePrice,
-          opts.accessMode as any,
-          tiers,
+          opts.accessMode,
+          // Same literal shape as initialize-agreement.ts twoTiers (proven
+          // correct on-chain); `as any` works around joint-tuple inference
+          // against the IDL DecodeEnum for Party.
+          freshTiers(provider) as any,
           opts.startTime ?? null,
           new anchor.BN(9_999_999_999),
           null,
@@ -199,7 +294,7 @@ async function initFreshAgreement(
         .rpc({ commitment: "confirmed", skipPreflight: false }),
     "init-fresh",
   );
-  return { config: p.config, shareMint };
+  return { config: p.config, shareMint, extraMetas: p.extraMetas };
 }
 
 export function definePurchaseTests(ctx: SharedCtx) {
@@ -224,14 +319,11 @@ export function definePurchaseTests(ctx: SharedCtx) {
     );
     const cfgBefore = await program.account.agreementConfig.fetch(ctx.config);
 
-    const tx = await sendWithRetry(
-      provider,
-      () =>
-        program.methods
-          .purchaseShare(firstBuy)
-          .accountsPartial(purchaseAccountsFor(ctx, buyerA.publicKey, buyerAUsdc))
-          .signers([buyerA])
-          .rpc({ commitment: "confirmed", skipPreflight: false }),
+    const tx = await sendPurchaseWithTransfer(
+      ctx,
+      buyerA,
+      buyerAUsdc,
+      firstBuy,
       "purchase",
     );
     console.log("\nPurchase tx", tx);
@@ -284,14 +376,11 @@ export function definePurchaseTests(ctx: SharedCtx) {
       costOf(secondBuy),
     );
 
-    await sendWithRetry(
-      provider,
-      () =>
-        program.methods
-          .purchaseShare(secondBuy)
-          .accountsPartial(purchaseAccountsFor(ctx, buyerA.publicKey, buyerAUsdc))
-          .signers([buyerA])
-          .rpc({ commitment: "confirmed", skipPreflight: false }),
+    await sendPurchaseWithTransfer(
+      ctx,
+      buyerA,
+      buyerAUsdc,
+      secondBuy,
       "purchase-again",
     );
 
@@ -396,6 +485,7 @@ export function definePurchaseTests(ctx: SharedCtx) {
       config: fresh.config,
       shareMintKeypair: fresh.shareMint,
       treasury,
+      extraMetas: fresh.extraMetas,
       tierPdas,
     };
 
@@ -449,6 +539,7 @@ export function definePurchaseTests(ctx: SharedCtx) {
       config: fresh.config,
       shareMintKeypair: fresh.shareMint,
       treasury,
+      extraMetas: fresh.extraMetas,
       tierPdas,
     };
     const funded = await newFundedBuyer(ctx, costOf(firstBuy) * 2n);

@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_2022::{spl_token_2022::state::AccountState as TokenAccountState, Token2022, ThawAccount},
+    token_2022::{spl_token_2022::state::AccountState, Approve, ThawAccount, Token2022},
     token_interface::{Mint, TokenAccount, TokenInterface},
 };
 
@@ -24,8 +24,6 @@ pub struct PurchaseShare<'info> {
     #[account(address = agreement_config.payment_mint)]
     pub payment_mint: Box<InterfaceAccount<'info, Mint>>,
 
-    /// Buyer entitlement ATA (Token-2022). Created on first purchase; born
-    /// frozen per the mint's DefaultAccountState, thawed below by the config PDA.
     #[account(
         init_if_needed,
         payer = buyer,
@@ -118,8 +116,7 @@ impl<'info> PurchaseShare<'info> {
                 PraErrorCode::SaleNotStarted
             );
         }
-        // MVP runs Open-only: nothing creates allowlist entries yet, so a
-        // gated agreement has no valid buyers.
+        // MVP is Open-only, no allowlist entries exist yet.
         require!(
             matches!(self.agreement_config.access_mode, AccessMode::Open),
             PraErrorCode::AccessDenied
@@ -130,9 +127,8 @@ impl<'info> PurchaseShare<'info> {
             PraErrorCode::InsufficientTreasuryShares
         );
 
-        // New holder snapshots the current accumulators so earlier deposits
-        // are not claimable; existing holders keep theirs (the transfer hook
-        // settles pending on treasury -> buyer).
+        // New buyer starts at current accumulators. The token leg runs as a
+        // second top-level instruction in the same tx (hook settles there).
         if self.claim_record.holder == Pubkey::default() {
             let tiers = [
                 &self.tier0,
@@ -178,10 +174,8 @@ impl<'info> PurchaseShare<'info> {
         ];
         let signer_seeds = &[config_seeds];
 
-        // Accounts are born frozen; thaw once so they can receive/hold.
-        // Skip when already thawed (repeat buyer) — thawing a thawed
-        // account errors.
-        if self.buyer_share_account.state == TokenAccountState::Frozen {
+        // Buyer ATAs are born frozen, thaw once.
+        if self.buyer_share_account.state == AccountState::Frozen {
             let cpi = CpiContext::new_with_signer(
                 self.token_2022_program.key(),
                 ThawAccount {
@@ -194,7 +188,7 @@ impl<'info> PurchaseShare<'info> {
             anchor_spl::token_2022::thaw_account(cpi)?;
         }
 
-        // Buyer USDC -> creator's payment destination. Never touches the vault.
+        // USDC goes straight to the creator, never the vault.
         let cost: u64 = u64::try_from(
             (amount as u128)
                 .checked_mul(self.agreement_config.share_price as u128)
@@ -210,30 +204,20 @@ impl<'info> PurchaseShare<'info> {
                 authority: self.buyer.to_account_info(),
             },
         );
-        anchor_spl::token_interface::transfer_checked(
-            cpi,
-            cost,
-            self.payment_mint.decimals,
-        )?;
+        anchor_spl::token_interface::transfer_checked(cpi, cost, self.payment_mint.decimals)?;
 
-        // Treasury -> buyer (Token-2022 via the unified token-interface
-        // CPI, dispatched to the Token-2022 program). Fires the transfer
-        // hook; the ExtraAccountMetaList is empty until the hook's
-        // ClaimRecord shape locks, so no extra hook accounts are required
-        // on this CPI yet. Once the list is populated, callers must append
-        // the hook's extra accounts (sender/receiver ClaimRecords) to this
-        // transfer.
-        let cpi = CpiContext::new_with_signer(
+        // Approve, don't transfer: a CPI transfer would reenter the hook
+        // (A -> Token-2022 -> A is banned). Client sends the transfer next.
+        let approve_cpi = CpiContext::new_with_signer(
             self.token_2022_program.key(),
-            anchor_spl::token_interface::TransferChecked {
-                from: self.treasury.to_account_info(),
-                to: self.buyer_share_account.to_account_info(),
-                mint: self.share_mint.to_account_info(),
+            Approve {
+                to: self.treasury.to_account_info(),
+                delegate: self.buyer.to_account_info(),
                 authority: self.agreement_config.to_account_info(),
             },
             signer_seeds,
         );
-        anchor_spl::token_interface::transfer_checked(cpi, amount, self.share_mint.decimals)?;
+        anchor_spl::token_2022::approve(approve_cpi, amount)?;
 
         self.agreement_config.shares_sold = self
             .agreement_config

@@ -7,10 +7,10 @@ import {
   mintTo,
 } from "@solana/spl-token";
 import { expect } from "chai";
-import { SharedCtx, sendWithRetry } from "../helpers";
+import { SharedCtx, sendWithRetry, getOrCreateAtaWithRetry, fundUsdcToExact } from "../helpers";
 import {
   newFundedBuyer,
-  purchaseAccountsFor,
+  sendPurchaseWithTransfer,
 } from "./purchase-share";
 
 // Main-agreement tiers (see initialize happy path): tier0 up to 10 USDC 100%
@@ -50,22 +50,21 @@ export function defineDepositTests(ctx: SharedCtx) {
   let depositorUsdc: anchor.web3.PublicKey;
 
   it("Fund designated depositor with mock USDC", async () => {
-    const payer = (provider.wallet as anchor.Wallet).payer;
-    const ata = await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      payer,
+    const ata = await getOrCreateAtaWithRetry(
+      provider,
       ctx.paymentMint!,
       ctx.depositorKeypair.publicKey,
+      "fund-depositor",
     );
-    depositorUsdc = ata.address;
+    depositorUsdc = ata;
     // Covers both waterfall deposits plus the oversized last-tier deposit.
-    await mintTo(
-      provider.connection,
-      payer,
+    await fundUsdcToExact(
+      provider,
       ctx.paymentMint!,
       depositorUsdc,
       provider.wallet.publicKey,
       3_000_000_000_000n,
+      "fund-depositor",
     );
     const bal = await provider.connection.getTokenAccountBalance(depositorUsdc);
     expect(BigInt(bal.value.amount)).to.equal(3_000_000_000_000n);
@@ -138,7 +137,12 @@ export function defineDepositTests(ctx: SharedCtx) {
     expect((t1 as any).accPerToken.toString()).to.equal(ACC1_AFTER_SECOND);
     const splits = (t1 as any).splits as Array<any>;
     expect(splits[1].owed.toString()).to.equal(CREATOR_OWED_AFTER_SECOND);
-    expect(splits[1].party.wallet.toBase58()).to.equal(
+    // IDL tuple variant decodes as PublicKey, single-element array, or
+    // numeric-keyed object depending on the coder path.
+    const rawWallet: any = splits[1].party.wallet;
+    const walletPk =
+      typeof rawWallet?.toBase58 === "function" ? rawWallet : rawWallet[0];
+    expect(walletPk.toBase58()).to.equal(
       provider.wallet.publicKey.toBase58(),
     );
 
@@ -152,16 +156,11 @@ export function defineDepositTests(ctx: SharedCtx) {
       ctx,
       BigInt(amount.toString()) * BigInt(ctx.sharePrice.toString()) * 2n,
     );
-    await sendWithRetry(
-      provider,
-      () =>
-        program.methods
-          .purchaseShare(amount)
-          .accountsPartial(
-            purchaseAccountsFor(ctx, funded.buyer.publicKey, funded.buyerUsdc),
-          )
-          .signers([funded.buyer])
-          .rpc({ commitment: "confirmed", skipPreflight: false }),
+    await sendPurchaseWithTransfer(
+      ctx,
+      funded.buyer,
+      funded.buyerUsdc,
+      amount,
       "late-buy",
     );
 
