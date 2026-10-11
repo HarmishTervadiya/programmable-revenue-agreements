@@ -163,7 +163,7 @@ export async function newFundedBuyer(
   const fundIx = SystemProgram.transfer({
     fromPubkey: provider.wallet.publicKey,
     toPubkey: buyer.publicKey,
-    lamports: 100_000_000,
+    lamports: 20_000_000,
   });
   const fundTx = new anchor.web3.Transaction().add(fundIx);
   await sendWithRetry(provider, () => provider.sendAndConfirm(fundTx), "fund-buyer");

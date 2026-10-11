@@ -9,6 +9,9 @@ skip-lint = false
 [programs.localnet]
 programmable_revenue_agreement = "2iEFwZ8qPjvEfSAtHqE7G7apQo9tVKFsiLrdAFC5sXop"
 
+[programs.devnet]
+programmable_revenue_agreement = "2iEFwZ8qPjvEfSAtHqE7G7apQo9tVKFsiLrdAFC5sXop"
+
 [provider]
 cluster = "localnet"
 wallet = "~/.config/solana/id.json"
