@@ -1,3 +1,4 @@
+pub mod claim_party_share;
 pub mod claim_tier_share;
 pub mod close_agreement;
 pub mod deposit_revenue;
@@ -8,6 +9,7 @@ pub mod purchase_share;
 pub mod transfer_hook;
 pub mod unfreeze_position;
 
+pub use claim_party_share::*;
 pub use claim_tier_share::*;
 pub use close_agreement::*;
 pub use deposit_revenue::*;

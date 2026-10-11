@@ -64,4 +64,6 @@ pub enum PraErrorCode {
     InvalidAmount,
     #[msg("Only the designated depositor can deposit")]
     UnauthorizedDepositor,
+    #[msg("Signer is not a wallet party in any tier")]
+    UnauthorizedParty,
 }

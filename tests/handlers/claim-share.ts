@@ -37,7 +37,8 @@ function twoTiers(provider: anchor.AnchorProvider) {
       threshold: new anchor.BN("18446744073709551615"),
       splits: [
         { party: { holders: {} }, bps: 5_000 },
-        { party: { wallet: provider.wallet.publicKey }, bps: 5_000 },
+        // Tuple variant: encode the pubkey as a single-element array.
+        { party: { wallet: [provider.wallet.publicKey] }, bps: 5_000 },
       ],
     },
   ];
@@ -684,5 +685,187 @@ export function defineClaimTests(ctx: SharedCtx) {
       (await provider.connection.getTokenAccountBalance(funded.buyerUsdc)).value.amount,
     );
     expect(after - before > 0n).to.equal(true);
+  });
+
+  it("Wallet party claims its tier share, splits zero out", async () => {
+    const me = provider.wallet.publicKey;
+    const ag = await initFreshAgreement(ctx, {
+      admin: anchor.web3.Keypair.generate().publicKey,
+      depositor: me,
+    });
+    const fctx = freshCtx(ctx, ag);
+    const amount = new anchor.BN(5_000_000);
+    const funded = await newFundedBuyer(ctx, costOf(amount) * 2n);
+    await sendPurchaseWithTransfer(fctx, funded.buyer, funded.buyerUsdc, amount, "party-buy");
+    const depUsdc = await topUpProviderUsdc(ctx, 20_000_000_000n);
+    await depositAs(ctx, ag, null, depUsdc, new anchor.BN(4_000_000_000), "party-dep1");
+    await depositAs(ctx, ag, null, depUsdc, new anchor.BN(8_000_000_000), "party-dep2");
+
+    // Sum what the tiers owe the provider wallet (skip holders splits).
+    const owedBefore: bigint[] = [];
+    for (const pda of [ag.tierPdas[0], ag.tierPdas[1]]) {
+      const t = await program.account.tierState.fetch(pda);
+      let sub = 0n;
+      for (const s of (t as any).splits.slice(0, (t as any).splitCount)) {
+        if (!("wallet" in (s.party as any))) continue;
+        const raw: any = (s.party as any).wallet;
+        const wallet = typeof raw?.toBase58 === "function" ? raw : raw[0];
+        if (wallet?.toBase58() === me.toBase58()) sub += BigInt(s.owed.toString());
+      }
+      owedBefore.push(sub);
+    }
+    const expected = owedBefore[0] + owedBefore[1];
+    expect(expected > 0n).to.equal(true);
+
+    const destBefore = BigInt(
+      (await provider.connection.getTokenAccountBalance(ctx.paymentDestination!)).value.amount,
+    );
+    const tx = await sendWithRetry(
+      provider,
+      () =>
+        program.methods
+          .claimPartyShare()
+          .accountsPartial({
+            party: me,
+            agreementConfig: ag.config,
+            paymentMint: ctx.paymentMint!,
+            partyUsdcAta: ctx.paymentDestination!,
+            vault: ag.vault,
+            tier0: ag.tierPdas[0],
+            tier1: ag.tierPdas[1],
+            tier2: ag.tierPdas[2],
+            tier3: ag.tierPdas[3],
+            tier4: ag.tierPdas[4],
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .rpc({ commitment: "confirmed", skipPreflight: false }),
+      "party-claim",
+    );
+    console.log("\nParty claim tx", tx);
+
+    const destAfter = BigInt(
+      (await provider.connection.getTokenAccountBalance(ctx.paymentDestination!)).value.amount,
+    );
+    expect(destAfter - destBefore).to.equal(expected);
+
+    // Owed zeroed, holder accumulators untouched.
+    for (const pda of [ag.tierPdas[0], ag.tierPdas[1]]) {
+      const t = await program.account.tierState.fetch(pda);
+      let sub = 0n;
+      for (const s of (t as any).splits.slice(0, (t as any).splitCount)) {
+        if (!("wallet" in (s.party as any))) continue;
+        const raw: any = (s.party as any).wallet;
+        const wallet = typeof raw?.toBase58 === "function" ? raw : raw[0];
+        if (wallet?.toBase58() === me.toBase58()) sub += BigInt(s.owed.toString());
+      }
+      expect(sub).to.equal(0n);
+    }
+    const t0 = await program.account.tierState.fetch(ag.tierPdas[0]);
+    expect((t0 as any).accPerToken.toString()).to.equal("10000000000000");
+  });
+
+  it("Second party claim with nothing owed rejects", async () => {
+    const me = provider.wallet.publicKey;
+    const ag = await initFreshAgreement(ctx, {
+      admin: anchor.web3.Keypair.generate().publicKey,
+      depositor: me,
+    });
+    const fctx = freshCtx(ctx, ag);
+    const amount = new anchor.BN(1_000_000);
+    const funded = await newFundedBuyer(ctx, costOf(amount) * 2n);
+    await sendPurchaseWithTransfer(fctx, funded.buyer, funded.buyerUsdc, amount, "party-buy2");
+    const depUsdc = await topUpProviderUsdc(ctx, 20_000_000_000n);
+    await depositAs(ctx, ag, null, depUsdc, new anchor.BN(4_000_000_000), "party-dep3a");
+    await depositAs(ctx, ag, null, depUsdc, new anchor.BN(8_000_000_000), "party-dep3b");
+    const accounts = {
+      party: me,
+      agreementConfig: ag.config,
+      paymentMint: ctx.paymentMint!,
+      partyUsdcAta: ctx.paymentDestination!,
+      vault: ag.vault,
+      tier0: ag.tierPdas[0],
+      tier1: ag.tierPdas[1],
+      tier2: ag.tierPdas[2],
+      tier3: ag.tierPdas[3],
+      tier4: ag.tierPdas[4],
+      tokenProgram: TOKEN_PROGRAM_ID,
+    };
+    await sendWithRetry(
+      provider,
+      () => program.methods.claimPartyShare().accountsPartial(accounts).rpc({
+        commitment: "confirmed",
+        skipPreflight: false,
+      }),
+      "party-claim-first",
+    );
+    try {
+      await sendWithRetry(
+        provider,
+        () => program.methods.claimPartyShare().accountsPartial(accounts).rpc({
+          commitment: "confirmed",
+          skipPreflight: false,
+        }),
+        "party-claim-empty",
+      );
+      throw new Error("Empty party claim should have failed but succeeded");
+    } catch (err) {
+      if (
+        err instanceof anchor.AnchorError &&
+        err.error.errorCode.code === "NothingToClaim"
+      ) {
+        console.log("\nEmpty party claim failed as expected:", err.error.errorMessage);
+      } else {
+        throw err;
+      }
+    }
+  });
+
+  it("Stranger wallet party claim rejects", async () => {
+    const me = provider.wallet.publicKey;
+    const ag = await initFreshAgreement(ctx, {
+      admin: anchor.web3.Keypair.generate().publicKey,
+      depositor: me,
+    });
+    const fctx = freshCtx(ctx, ag);
+    const amount = new anchor.BN(1_000_000);
+    const funded = await newFundedBuyer(ctx, costOf(amount) * 2n);
+    await sendPurchaseWithTransfer(fctx, funded.buyer, funded.buyerUsdc, amount, "party-buy3");
+    const depUsdc = await topUpProviderUsdc(ctx, 10_000_000_000n);
+    await depositAs(ctx, ag, null, depUsdc, new anchor.BN(2_000_000_000), "party-dep4");
+    const stranger = await newFundedBuyer(ctx, 1_000_000n);
+    try {
+      await sendWithRetry(
+        provider,
+        () =>
+          program.methods
+            .claimPartyShare()
+            .accountsPartial({
+              party: stranger.buyer.publicKey,
+              agreementConfig: ag.config,
+              paymentMint: ctx.paymentMint!,
+              partyUsdcAta: stranger.buyerUsdc,
+              vault: ag.vault,
+              tier0: ag.tierPdas[0],
+              tier1: ag.tierPdas[1],
+              tier2: ag.tierPdas[2],
+              tier3: ag.tierPdas[3],
+              tier4: ag.tierPdas[4],
+              tokenProgram: TOKEN_PROGRAM_ID,
+            })
+            .signers([stranger.buyer])
+            .rpc({ commitment: "confirmed", skipPreflight: false }),
+        "party-claim-stranger",
+      );
+      throw new Error("Stranger party claim should have failed but succeeded");
+    } catch (err) {
+      if (
+        err instanceof anchor.AnchorError &&
+        err.error.errorCode.code === "UnauthorizedParty"
+      ) {
+        console.log("\nStranger party claim failed as expected:", err.error.errorMessage);
+      } else {
+        throw err;
+      }
+    }
   });
 }
