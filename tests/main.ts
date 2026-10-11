@@ -5,6 +5,7 @@ import { SharedCtx } from "./helpers";
 import { defineInitializeTests } from "./handlers/initialize-agreement";
 import { definePurchaseTests } from "./handlers/purchase-share";
 import { defineDepositTests } from "./handlers/deposit-revenue";
+import { defineClaimTests } from "./handlers/claim-share";
 
 describe("programmable-revenue-agreement", () => {
   const provider = anchor.AnchorProvider.env();
@@ -70,4 +71,5 @@ describe("programmable-revenue-agreement", () => {
   defineInitializeTests(ctx);
   definePurchaseTests(ctx);
   defineDepositTests(ctx);
+  defineClaimTests(ctx);
 });
