@@ -94,6 +94,10 @@ export function WindDown() {
 
   function closeAgreement() {
     setError(null);
+    if (role !== "creator") {
+      setError("Only the Creator can close. Switch the active role to Creator.");
+      return;
+    }
     try {
       const r = exec.close();
       setClosed(r);
@@ -300,9 +304,9 @@ export function WindDown() {
                   className="mt-5 w-full"
                   onClick={closeAgreement}
                   disabled={!closeState.ok}
-                  variant="primary"
+                  variant={role === "creator" ? "primary" : "ghostDark"}
                 >
-                  Close agreement
+                  {role === "creator" ? "Close agreement" : "Switch to Creator to close"}
                 </Button>
                 {walletOwed > 0n && (
                   <p className="mt-3 rounded-lg bg-amber-500/15 px-3 py-2.5 text-sm text-amber-400">
@@ -312,6 +316,9 @@ export function WindDown() {
                       Claim it first →
                     </Link>
                   </p>
+                )}
+                {error && (
+                  <p className="mt-3 text-sm text-red-400">{error}</p>
                 )}
               </>
             )}

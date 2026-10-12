@@ -41,6 +41,7 @@ export function Claim() {
   const { config = "demo" } = useParams();
   const tx = useTxSequence();
   const [after, setAfter] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   if (!a) return <BackTo config={config} />;
 
@@ -67,6 +68,11 @@ export function Claim() {
 
   function claimHolder() {
     if (!holder) return;
+    if (role !== "holder" && role !== "buyer") {
+      setActionError("Switch the active role to Holder to claim your USDC.");
+      return;
+    }
+    setActionError(null);
     try {
       exec.claim(holder.id);
       tx.run(HOLDER_CHECKS);
@@ -77,6 +83,11 @@ export function Claim() {
   }
 
   function claimParty() {
+    if (role !== "creator") {
+      setActionError("Switch the active role to Creator to claim the wallet share.");
+      return;
+    }
+    setActionError(null);
     try {
       exec.claimParty(ACTORS.creator.id);
       tx.run(PARTY_CHECKS);
@@ -229,7 +240,7 @@ export function Claim() {
             disabled={!holder || payout === 0n || frozen}
             variant={role === "holder" || role === "buyer" ? "primary" : "ghostDark"}
           >
-            Claim as holder
+            {role === "holder" || role === "buyer" ? "Claim as holder" : "Switch to Holder to claim"}
           </Button>
           {!holder && (
             <p className="mono-label mt-2 text-text-muted-dark">
@@ -262,8 +273,11 @@ export function Claim() {
               disabled={walletOwed === 0n}
               variant={role === "creator" ? "primary" : "ghostDark"}
             >
-              Claim wallet share
+              {role === "creator" ? "Claim wallet share" : "Switch to Creator to claim"}
             </Button>
+            {actionError && (
+              <p className="mt-3 text-sm text-red-400">{actionError}</p>
+            )}
             {walletOwed === 0n && (
               <p className="mono-label mt-2 text-text-muted-dark">
                 WALLET SPLITS ACCRUE ON EACH DEPOSIT
