@@ -1,12 +1,10 @@
 import { PublicKey } from "@solana/web3.js";
 
-function required(name: string, value: string | undefined): string {
-  if (!value) throw new Error(`Missing ${name} — copy .env.example to .env`);
-  return value;
-}
+/** Deployed devnet program — override with VITE_PROGRAM_ID. */
+const DEFAULT_PROGRAM_ID = "2iEFwZ8qPjvEfSAtHqE7G7apQo9tVKFsiLrdAFC5sXop";
 
 export const PROGRAM_ID = new PublicKey(
-  required("VITE_PROGRAM_ID", import.meta.env.VITE_PROGRAM_ID),
+  import.meta.env.VITE_PROGRAM_ID || DEFAULT_PROGRAM_ID,
 );
 
 export const RPC_ENDPOINT =
