@@ -3,9 +3,10 @@ export function fmtUsdc(baseUnits: bigint, decimals = 2): string {
   const neg = baseUnits < 0n;
   const abs = neg ? -baseUnits : baseUnits;
   const whole = abs / 1_000_000n;
+  const grouped = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  if (decimals <= 0) return `${neg ? "−" : ""}${grouped}`;
   const frac = abs % 1_000_000n;
   const fracStr = frac.toString().padStart(6, "0").slice(0, decimals);
-  const grouped = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   return `${neg ? "−" : ""}${grouped}.${fracStr}`;
 }
 

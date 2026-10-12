@@ -22,7 +22,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
       >
         <input
           ref={ref}
-          className="mono-data min-w-0 flex-1 bg-transparent text-right text-base outline-none placeholder:text-secondary/60"
+          className="mono-data min-w-0 flex-1 bg-transparent text-right text-base outline-none placeholder:text-secondary/80"
           {...props}
         />
         {suffix && (

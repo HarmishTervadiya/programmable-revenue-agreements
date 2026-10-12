@@ -79,7 +79,7 @@ export function KpiBadge({
       >
         {value}
       </span>
-      <span className="body-lg pr-3 text-secondary text-base">{label}</span>
+      <span className="body-lg pr-3 text-base text-text-on-light">{label}</span>
     </div>
   );
 }
