@@ -6,3 +6,7 @@ node_modules
 test-ledger
 .yarn
 .surfpool
+
+# web
+web/dist
+web/.env

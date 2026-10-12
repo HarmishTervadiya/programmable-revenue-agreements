@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand purple (sampled from the deck) */
+  --color-purple-500: #6d45fe;
+  --color-purple-400: #7653f5;
+  --color-purple-300: #855fff;
+  --color-purple-600: #5838d0;
+  --color-purple-200: #c9bbff;
+  --color-purple-100: #f1eeff;
+  --color-purple-50: #f7f5ff;
+
+  /* Neutrals */
+  --color-ink-950: #000000;
+  --color-ink-900: #040406;
+  --color-ink-850: #0b0a12;
+  --color-ink-800: #121116;
+  --color-ink-750: #141416;
+  --color-ink-700: #1d1b26;
+  --color-ink-600: #2a2738;
+  --color-ink-violet: #181030;
+
+  --color-text-on-light: #0b0b10;
+  --color-text-muted-light: #6b6880;
+  --color-text-muted-dark: #8b8899;
+
+  /* Secondary accents (from the thorn artwork) */
+  --color-coral-500: #ff6b81;
+  --color-amber-500: #ffa040;
+  --color-mint-400: #2ee6b6;
+  --color-red-500: #ff4d5e;
+
+  /* Light-world success ink (mint-400 is too light on white) */
+  --color-mint-700: #12b88f;
+
+  --font-display: "Hanken Grotesk Variable", "Hanken Grotesk", system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, monospace;
+
+  --radius-card: 16px;
+  --radius-panel: 24px;
+  --radius-frame: 28px;
+
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@theme inline {
+  /* Semantic aliases resolve per theme root (see base.css .theme-light / .theme-dark) */
+  --color-bg-page: var(--bg-page);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-surface-inset: var(--bg-surface-inset);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-accent: var(--accent);
+  --color-holders-share: var(--holders-share);
+  --color-creator-share: var(--creator-share);
+  --color-healthy: var(--healthy);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+}
