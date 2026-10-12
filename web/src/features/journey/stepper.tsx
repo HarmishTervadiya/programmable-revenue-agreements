@@ -1,3 +1,4 @@
+import { Link, useParams } from "react-router-dom";
 import { useJourney, ROLES, type Role } from "@/state/journey";
 import { cn } from "@/lib/cn";
 
@@ -14,9 +15,12 @@ export const JOURNEY_STEPS = [
 
 export type StepId = (typeof JOURNEY_STEPS)[number]["id"];
 
-/** Segmented progress cells for the stepper (deck epoch bar). */
+/** Segmented progress cells for the stepper (deck epoch bar). Steps are links. */
 export function Stepper({ active, progress = 0 }: { active: StepId; progress?: number }) {
   const activeIndex = JOURNEY_STEPS.findIndex((s) => s.id === active);
+  const { config = "demo" } = useParams();
+  const pathFor = (id: StepId) =>
+    id === "create" ? "/create" : `/a/${config}/${id}`;
   return (
     <nav
       aria-label="Journey steps"
@@ -27,26 +31,28 @@ export function Stepper({ active, progress = 0 }: { active: StepId; progress?: n
         const pct = i < activeIndex ? 1 : i === activeIndex ? progress : 0;
         return (
           <div key={s.id} className="flex items-center gap-2">
-            <span
+            <Link
+              to={pathFor(s.id)}
               className={cn(
-                "mono-label rounded-full px-2.5 py-1 transition-colors",
+                "mono-label rounded-full px-2.5 py-1 transition-colors hover:ring-1 hover:ring-purple-400",
                 isActive
                   ? "glow-purple bg-ink-900 text-white"
                   : i < activeIndex
-                    ? "bg-ink-900/80 text-white/70"
-                    : "bg-ink-900/40 text-white/40",
+                    ? "bg-ink-900/80 text-white/80"
+                    : "bg-ink-900/50 text-white/55",
               )}
             >
               N° {s.n}
-            </span>
-            <span
+            </Link>
+            <Link
+              to={pathFor(s.id)}
               className={cn(
-                "mono-label",
-                isActive ? "text-white" : i < activeIndex ? "text-white/60" : "text-white/35",
+                "mono-label hover:text-white",
+                isActive ? "text-white" : i < activeIndex ? "text-white/75" : "text-white/50",
               )}
             >
               {s.label}
-            </span>
+            </Link>
             <div className="flex gap-[3px]" aria-hidden>
               {Array.from({ length: 8 }, (_, c) => (
                 <span
