@@ -55,6 +55,11 @@ export function useExecute() {
       return wrap("Claimed", () => sim.claim(holderId));
     },
 
+    claimParty(partyId: string): bigint {
+      if (!demoMode) return liveNotReady("claim_party_share");
+      return wrap("Claimed", () => sim.claimParty(partyId));
+    },
+
     transfer(fromId: string, fromLabel: string, toId: string, toLabel: string, amount: bigint) {
       if (!demoMode) return liveNotReady("transfer");
       return wrap("Transfer settled", () => sim.transfer(fromId, fromLabel, toId, toLabel, amount));
