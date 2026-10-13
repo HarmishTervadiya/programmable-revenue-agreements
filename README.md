@@ -10,7 +10,7 @@ Programmable Revenue Agreements (PRA) automate multi-party revenue splits, recou
 
 1. **Agreement Creation**: A creator defines an agreement with fixed token supply, share price, waterfall tiers, and termination conditions. The protocol mints the entire fixed supply into a program-owned treasury with minting permanently disabled.
 2. **Capital Formation**: Investors purchase entitlement tokens using USDC. Principal flows directly to the creator's payment destination—never co-mingling with revenue.
-3. **Waterfall Revenue Ingestion**: A designated revenue depositor funds the program vault. The protocol fills tiers sequentially by cumulative deposit milestones and updates per-token earning accumulators in $O(1)$ constant time.
+3. **Waterfall Revenue Ingestion**: A designated revenue depositor funds the program vault. The protocol fills tiers sequentially by cumulative deposit milestones and updates per-token earning accumulators in constant O(1) time.
 4. **Non-Dilutive Claims**: Token holders withdraw accrued earnings on demand. Payout calculations are strictly deterministic—claiming frequently or waiting until expiry yields the identical total.
 5. **Transfer Hook Accounting**: A Token-2022 transfer hook snapshots accrued revenue into a pending claim record on every secondary transfer, ensuring historical earnings remain with the seller while the buyer only accrues future yield.
 6. **Regulatory Compliance**: Accounts are frozen by default and thawed upon purchase. A designated Compliance Admin can freeze/thaw individual positions without custodial fund seizure.
@@ -65,29 +65,35 @@ Detailed technical specifications and architectural design documents:
 
 Tiers fill sequentially based on total historical deposits. Each tier defines a cumulative milestone threshold and a set of basis-point splits (summing to 10,000 bps) allocated to either `Holders` or a designated `Wallet(pubkey)`. The final tier must be uncapped (`threshold = u64::MAX`) to guarantee deposits can never overflow.
 
-### 2. $O(1)$ Scalable Accumulator
+### 2. Constant-Time O(1) Scalable Accumulator
 
-To prevent looping over token holders on deposit, each tier maintains a monotonically increasing accumulator (`acc_per_token` with $10^{12}$ precision factor):
+To prevent looping over token holders on deposit, each tier maintains a monotonically increasing accumulator (`acc_per_token` with `10^12` precision factor):
 
-$$\Delta \text{acc} = \frac{\text{take} \times \text{holders\_bps} \times 10^{12}}{10,000 \times \text{supply}}$$
+$$
+\Delta \text{acc} = \frac{\text{take} \cdot \text{bps}_{\text{holders}} \cdot 10^{12}}{10{,}000 \cdot \text{supply}}
+$$
 
 Fixed wallet parties receive their share directly in state:
 
-$$\Delta \text{owed} = \frac{\text{take} \times \text{wallet\_bps}}{10,000}$$
+$$
+\Delta \text{owed} = \frac{\text{take} \cdot \text{bps}_{\text{wallet}}}{10{,}000}
+$$
 
 ### 3. Claim Mechanics
 
 A holder's claimable entitlement is calculated as:
 
-$$\text{Claimable} = \frac{\text{balance} \times (\text{acc} - \text{last\_acc})}{10^{12}} + \text{pending}$$
+$$
+\text{Claimable} = \frac{\text{balance} \cdot (\text{acc} - \text{acc}_{\text{last}})}{10^{12}} + \text{pending}
+$$
 
 Upon claim execution, `last_acc` is advanced to current `acc` and `pending` is reset to zero.
 
 ### 4. Transfer Hook Snapshotting
 
 Token-2022 invokes the transfer hook after account balances are updated. The hook reconstructs pre-transfer balances:
-- **Sender pre-balance**: $\text{current\_balance} + \text{amount}$
-- **Receiver pre-balance**: $\text{current\_balance} - \text{amount}$
+- **Sender pre-transfer balance**: `current_balance + amount`
+- **Receiver pre-transfer balance**: `current_balance - amount`
 
 The hook computes accrued revenue for the sender up to that block, stores it in `pending`, and resets both parties' `last_acc` pointers to the current tier accumulator.
 
