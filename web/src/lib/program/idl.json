@@ -1,0 +1,1612 @@
+{
+  "address": "2iEFwZ8qPjvEfSAtHqE7G7apQo9tVKFsiLrdAFC5sXop",
+  "metadata": {
+    "name": "programmable_revenue_agreement",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Programmable Revenue Agreements"
+  },
+  "instructions": [
+    {
+      "name": "claim_party_share",
+      "discriminator": [
+        73,
+        231,
+        167,
+        60,
+        250,
+        128,
+        132,
+        147
+      ],
+      "accounts": [
+        {
+          "name": "party",
+          "signer": true
+        },
+        {
+          "name": "agreement_config"
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "party_usdc_ata",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "tier0",
+          "writable": true
+        },
+        {
+          "name": "tier1",
+          "writable": true
+        },
+        {
+          "name": "tier2",
+          "writable": true
+        },
+        {
+          "name": "tier3",
+          "writable": true
+        },
+        {
+          "name": "tier4",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_tier_share",
+      "discriminator": [
+        237,
+        55,
+        87,
+        183,
+        99,
+        236,
+        245,
+        172
+      ],
+      "accounts": [
+        {
+          "name": "holder",
+          "signer": true
+        },
+        {
+          "name": "agreement_config"
+        },
+        {
+          "name": "share_mint"
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "holder_share_ata"
+        },
+        {
+          "name": "holder_usdc_ata",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "claim_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  108,
+                  97,
+                  105,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config"
+              },
+              {
+                "kind": "account",
+                "path": "holder"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tier0"
+        },
+        {
+          "name": "tier1"
+        },
+        {
+          "name": "tier2"
+        },
+        {
+          "name": "tier3"
+        },
+        {
+          "name": "tier4"
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_agreement",
+      "discriminator": [
+        48,
+        34,
+        42,
+        18,
+        144,
+        209,
+        198,
+        55
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "agreement_config"
+          ]
+        },
+        {
+          "name": "agreement_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  114,
+                  101,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config.creator",
+                "account": "AgreementConfig"
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config.agreement_id",
+                "account": "AgreementConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "payment_destination",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config"
+              }
+            ]
+          }
+        },
+        {
+          "name": "share_mint"
+        },
+        {
+          "name": "treasury",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  114,
+                  101,
+                  97,
+                  115,
+                  117,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tier0",
+          "writable": true
+        },
+        {
+          "name": "tier1",
+          "writable": true
+        },
+        {
+          "name": "tier2",
+          "writable": true
+        },
+        {
+          "name": "tier3",
+          "writable": true
+        },
+        {
+          "name": "tier4",
+          "writable": true
+        },
+        {
+          "name": "extra_metas",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  120,
+                  116,
+                  114,
+                  97,
+                  45,
+                  97,
+                  99,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "share_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_token_program"
+        },
+        {
+          "name": "token_2022_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "deposit_revenue",
+      "discriminator": [
+        224,
+        212,
+        82,
+        100,
+        60,
+        240,
+        220,
+        29
+      ],
+      "accounts": [
+        {
+          "name": "depositor",
+          "signer": true
+        },
+        {
+          "name": "agreement_config",
+          "writable": true
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "depositor_usdc_account",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "tier0",
+          "writable": true
+        },
+        {
+          "name": "tier1",
+          "writable": true
+        },
+        {
+          "name": "tier2",
+          "writable": true
+        },
+        {
+          "name": "tier3",
+          "writable": true
+        },
+        {
+          "name": "tier4",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "expire_agreement",
+      "discriminator": [
+        238,
+        66,
+        118,
+        206,
+        71,
+        195,
+        75,
+        132
+      ],
+      "accounts": [
+        {
+          "name": "agreement_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  114,
+                  101,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config.creator",
+                "account": "AgreementConfig"
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config.agreement_id",
+                "account": "AgreementConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "share_mint",
+          "writable": true
+        },
+        {
+          "name": "treasury",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  114,
+                  101,
+                  97,
+                  115,
+                  117,
+                  114,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_2022_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "freeze_position",
+      "discriminator": [
+        141,
+        205,
+        81,
+        36,
+        84,
+        149,
+        58,
+        188
+      ],
+      "accounts": [
+        {
+          "name": "compliance_admin",
+          "signer": true
+        },
+        {
+          "name": "agreement_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  114,
+                  101,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config.creator",
+                "account": "AgreementConfig"
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config.agreement_id",
+                "account": "AgreementConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "share_mint"
+        },
+        {
+          "name": "holder_share_ata",
+          "writable": true
+        },
+        {
+          "name": "claim_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  108,
+                  97,
+                  105,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config"
+              },
+              {
+                "kind": "account",
+                "path": "claim_record.holder",
+                "account": "ClaimRecord"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_2022_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_agreement",
+      "discriminator": [
+        228,
+        200,
+        63,
+        16,
+        47,
+        146,
+        42,
+        166
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "agreement_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  114,
+                  101,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "agreement_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "share_mint",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "payment_destination",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config"
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "extra_metas",
+          "writable": true
+        },
+        {
+          "name": "tier0",
+          "writable": true
+        },
+        {
+          "name": "tier1",
+          "writable": true
+        },
+        {
+          "name": "tier2",
+          "writable": true
+        },
+        {
+          "name": "tier3",
+          "writable": true
+        },
+        {
+          "name": "tier4",
+          "writable": true
+        },
+        {
+          "name": "token_2022_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "agreement_id",
+          "type": "u64"
+        },
+        {
+          "name": "supply",
+          "type": "u64"
+        },
+        {
+          "name": "share_price",
+          "type": "u64"
+        },
+        {
+          "name": "access_mode",
+          "type": {
+            "defined": {
+              "name": "AccessMode"
+            }
+          }
+        },
+        {
+          "name": "tiers",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "TierInput"
+              }
+            }
+          }
+        },
+        {
+          "name": "start_time",
+          "type": {
+            "option": "i64"
+          }
+        },
+        {
+          "name": "exp_time",
+          "type": {
+            "option": "i64"
+          }
+        },
+        {
+          "name": "end_cap",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "claim_window",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "depositor",
+          "type": "pubkey"
+        },
+        {
+          "name": "compliance_admin",
+          "type": "pubkey"
+        },
+        {
+          "name": "payment_destination",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "purchase_share",
+      "discriminator": [
+        193,
+        117,
+        254,
+        174,
+        249,
+        196,
+        127,
+        32
+      ],
+      "accounts": [
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "agreement_config",
+          "writable": true
+        },
+        {
+          "name": "share_mint"
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "buyer_share_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "buyer"
+              },
+              {
+                "kind": "account",
+                "path": "token_2022_program"
+              },
+              {
+                "kind": "account",
+                "path": "share_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "buyer_usdc_account",
+          "writable": true
+        },
+        {
+          "name": "payment_destination",
+          "writable": true
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "claim_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  108,
+                  97,
+                  105,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config"
+              },
+              {
+                "kind": "account",
+                "path": "buyer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tier0"
+        },
+        {
+          "name": "tier1"
+        },
+        {
+          "name": "tier2"
+        },
+        {
+          "name": "tier3"
+        },
+        {
+          "name": "tier4"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "token_2022_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "transfer_hook",
+      "discriminator": [
+        105,
+        37,
+        101,
+        197,
+        75,
+        251,
+        102,
+        26
+      ],
+      "accounts": [
+        {
+          "name": "source"
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "destination"
+        },
+        {
+          "name": "authority",
+          "docs": [
+            "used beyond Token-2022's own validation; holds no funds for us."
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "unfreeze_position",
+      "discriminator": [
+        63,
+        47,
+        150,
+        82,
+        22,
+        82,
+        140,
+        26
+      ],
+      "accounts": [
+        {
+          "name": "compliance_admin",
+          "signer": true
+        },
+        {
+          "name": "agreement_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  114,
+                  101,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config.creator",
+                "account": "AgreementConfig"
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config.agreement_id",
+                "account": "AgreementConfig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "share_mint"
+        },
+        {
+          "name": "holder_share_ata",
+          "writable": true
+        },
+        {
+          "name": "claim_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  108,
+                  97,
+                  105,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agreement_config"
+              },
+              {
+                "kind": "account",
+                "path": "claim_record.holder",
+                "account": "ClaimRecord"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_2022_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "AgreementConfig",
+      "discriminator": [
+        249,
+        13,
+        102,
+        105,
+        198,
+        33,
+        206,
+        196
+      ]
+    },
+    {
+      "name": "ClaimRecord",
+      "discriminator": [
+        57,
+        229,
+        0,
+        9,
+        65,
+        62,
+        96,
+        7
+      ]
+    },
+    {
+      "name": "TierState",
+      "discriminator": [
+        14,
+        126,
+        162,
+        25,
+        106,
+        87,
+        245,
+        167
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidSupply",
+      "msg": "Supply must be above zero"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidPrice",
+      "msg": "Share price must be above zero"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidTierCount",
+      "msg": "Need 1 to 5 tiers"
+    },
+    {
+      "code": 6003,
+      "name": "ThresholdsNotIncreasing",
+      "msg": "Thresholds must strictly increase"
+    },
+    {
+      "code": 6004,
+      "name": "LastTierMustBeUncapped",
+      "msg": "Last tier must be uncapped (u64::MAX) so revenue never goes stale"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidSplitCount",
+      "msg": "Each tier needs 1 to 4 splits"
+    },
+    {
+      "code": 6006,
+      "name": "SplitsMustSumTo10000",
+      "msg": "Each tier splits must sum to 10000 bps"
+    },
+    {
+      "code": 6007,
+      "name": "ExpOrCapRequired",
+      "msg": "Need exp_time or end_cap (or both)"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidClaimWindow",
+      "msg": "Claim window must be above zero"
+    },
+    {
+      "code": 6009,
+      "name": "AdminCannotBeCreator",
+      "msg": "Compliance admin cannot be creator"
+    },
+    {
+      "code": 6010,
+      "name": "FrozenPosition",
+      "msg": "Position is frozen by compliance"
+    },
+    {
+      "code": 6011,
+      "name": "NothingToClaim",
+      "msg": "Nothing to claim"
+    },
+    {
+      "code": 6012,
+      "name": "InsufficientVaultFunds",
+      "msg": "Vault holds less than the claim"
+    },
+    {
+      "code": 6013,
+      "name": "MathOverflow",
+      "msg": "Math overflow"
+    },
+    {
+      "code": 6014,
+      "name": "MissingClaimRecord",
+      "msg": "Claim record is missing for a transfer party"
+    },
+    {
+      "code": 6015,
+      "name": "InvalidHookState",
+      "msg": "Transfer hook invoked outside a token transfer"
+    },
+    {
+      "code": 6016,
+      "name": "UnauthorizedComplianceAdmin",
+      "msg": "Only the compliance admin may change position freeze state"
+    },
+    {
+      "code": 6017,
+      "name": "PositionAlreadyFrozen",
+      "msg": "Position is already frozen"
+    },
+    {
+      "code": 6018,
+      "name": "PositionAlreadyUnfrozen",
+      "msg": "Position is already unfrozen"
+    },
+    {
+      "code": 6019,
+      "name": "AgreementNotActive",
+      "msg": "Agreement must be active"
+    },
+    {
+      "code": 6020,
+      "name": "EndConditionNotMet",
+      "msg": "Neither expiry time nor cumulative revenue cap has been reached"
+    },
+    {
+      "code": 6021,
+      "name": "UnauthorizedCreator",
+      "msg": "Only the creator may close the agreement"
+    },
+    {
+      "code": 6022,
+      "name": "AgreementNotExpired",
+      "msg": "Agreement must be expired"
+    },
+    {
+      "code": 6023,
+      "name": "ClaimWindowStillOpen",
+      "msg": "Claim deadline has not elapsed and vault exceeds the dust allowance"
+    },
+    {
+      "code": 6024,
+      "name": "TreasuryNotEmpty",
+      "msg": "Treasury must be empty before closure"
+    },
+    {
+      "code": 6025,
+      "name": "VaultNotEmpty",
+      "msg": "Vault must be empty before closure"
+    },
+    {
+      "code": 6026,
+      "name": "SaleNotStarted",
+      "msg": "Sale has not started yet"
+    },
+    {
+      "code": 6027,
+      "name": "AccessDenied",
+      "msg": "Access denied: agreement is allowlist-gated"
+    },
+    {
+      "code": 6028,
+      "name": "InsufficientTreasuryShares",
+      "msg": "Treasury holds fewer shares than requested"
+    },
+    {
+      "code": 6029,
+      "name": "InvalidAmount",
+      "msg": "Amount must be above zero"
+    },
+    {
+      "code": 6030,
+      "name": "UnauthorizedDepositor",
+      "msg": "Only the designated depositor can deposit"
+    },
+    {
+      "code": 6031,
+      "name": "UnauthorizedParty",
+      "msg": "Signer is not a wallet party in any tier"
+    }
+  ],
+  "types": [
+    {
+      "name": "AccessMode",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Open"
+          },
+          {
+            "name": "Allowlist"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AgreementConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "agreement_id",
+            "type": "u64"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "share_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "depositor",
+            "type": "pubkey"
+          },
+          {
+            "name": "compliance_admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment_destination",
+            "type": "pubkey"
+          },
+          {
+            "name": "supply",
+            "type": "u64"
+          },
+          {
+            "name": "share_price",
+            "type": "u64"
+          },
+          {
+            "name": "access_mode",
+            "type": {
+              "defined": {
+                "name": "AccessMode"
+              }
+            }
+          },
+          {
+            "name": "tier_count",
+            "type": "u8"
+          },
+          {
+            "name": "start_time",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "exp_time",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "end_cap",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "claim_window",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "claim_deadline",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "total_deposited",
+            "type": "u64"
+          },
+          {
+            "name": "shares_sold",
+            "type": "u64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "AgreementStatus"
+              }
+            }
+          },
+          {
+            "name": "config_bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_bump",
+            "type": "u8"
+          },
+          {
+            "name": "treasury_bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AgreementStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Expired"
+          },
+          {
+            "name": "Closed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ClaimRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "holder",
+            "type": "pubkey"
+          },
+          {
+            "name": "last_acc",
+            "type": {
+              "array": [
+                "u128",
+                5
+              ]
+            }
+          },
+          {
+            "name": "pending",
+            "type": {
+              "array": [
+                "u64",
+                5
+              ]
+            }
+          },
+          {
+            "name": "frozen",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Party",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Holders"
+          },
+          {
+            "name": "Wallet",
+            "fields": [
+              "pubkey"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Split",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "party",
+            "type": {
+              "defined": {
+                "name": "Party"
+              }
+            }
+          },
+          {
+            "name": "bps",
+            "type": "u16"
+          },
+          {
+            "name": "owed",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SplitInput",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "party",
+            "type": {
+              "defined": {
+                "name": "Party"
+              }
+            }
+          },
+          {
+            "name": "bps",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TierInput",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "threshold",
+            "type": "u64"
+          },
+          {
+            "name": "splits",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "SplitInput"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TierState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "agreement",
+            "type": "pubkey"
+          },
+          {
+            "name": "tier_index",
+            "type": "u8"
+          },
+          {
+            "name": "threshold",
+            "type": "u64"
+          },
+          {
+            "name": "filled",
+            "type": "u64"
+          },
+          {
+            "name": "acc_per_token",
+            "type": "u128"
+          },
+          {
+            "name": "splits",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "Split"
+                  }
+                },
+                4
+              ]
+            }
+          },
+          {
+            "name": "split_count",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "AGREEMENT_SEED",
+      "type": "bytes",
+      "value": "[97, 103, 114, 101, 101, 109, 101, 110, 116]"
+    },
+    {
+      "name": "CLAIM_SEED",
+      "type": "bytes",
+      "value": "[99, 108, 97, 105, 109]"
+    },
+    {
+      "name": "DUST_ALLOWANCE",
+      "type": "u64",
+      "value": "1000"
+    },
+    {
+      "name": "EXTRA_METAS",
+      "type": "bytes",
+      "value": "[101, 120, 116, 114, 97, 45, 97, 99, 99, 111, 117, 110, 116, 45, 109, 101, 116, 97, 115]"
+    },
+    {
+      "name": "MAX_BPS",
+      "type": "u64",
+      "value": "10000"
+    },
+    {
+      "name": "TIER_SEED",
+      "type": "bytes",
+      "value": "[116, 105, 101, 114]"
+    },
+    {
+      "name": "TREASURY_SEED",
+      "type": "bytes",
+      "value": "[116, 114, 101, 97, 115, 117, 114, 121]"
+    },
+    {
+      "name": "VAULT_SEED",
+      "type": "bytes",
+      "value": "[118, 97, 117, 108, 116]"
+    }
+  ]
+}

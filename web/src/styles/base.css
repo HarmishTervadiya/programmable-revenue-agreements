@@ -1,0 +1,117 @@
+@import "@fontsource-variable/hanken-grotesk";
+@import "@fontsource-variable/geist-mono";
+@import "./tokens.css";
+
+/* Two worlds, one system. The theme class is set on <html> by ThemeProvider. */
+.theme-light {
+  --bg-page: var(--color-purple-100);
+  --bg-surface: #ffffff;
+  --bg-surface-inset: var(--color-purple-50);
+  --border-subtle: color-mix(in srgb, var(--color-purple-500) 10%, transparent);
+  --border-strong: color-mix(in srgb, var(--color-purple-500) 30%, transparent);
+  --text-primary: var(--color-text-on-light);
+  --text-secondary: var(--color-text-muted-light);
+  --accent: var(--color-purple-500);
+  --holders-share: var(--color-purple-500);
+  --creator-share: var(--color-coral-500);
+  --healthy: var(--color-mint-700);
+  --warning: var(--color-amber-500);
+  --danger: var(--color-red-500);
+  color-scheme: light;
+}
+
+.theme-dark {
+  --bg-page: var(--color-ink-850);
+  --bg-surface: var(--color-ink-800);
+  --bg-surface-inset: var(--color-ink-950);
+  --border-subtle: var(--color-ink-700);
+  --border-strong: var(--color-ink-600);
+  --text-primary: #ffffff;
+  --text-secondary: var(--color-text-muted-dark);
+  --accent: var(--color-purple-400);
+  --holders-share: var(--color-purple-400);
+  --creator-share: var(--color-coral-500);
+  --healthy: var(--color-mint-400);
+  --warning: var(--color-amber-500);
+  --danger: var(--color-red-500);
+  color-scheme: dark;
+}
+
+html {
+  font-size: 16px;
+}
+
+html.presentation {
+  font-size: 20px; /* Presentation Mode: 125% type, toggled at runtime */
+}
+
+body {
+  font-family: var(--font-display);
+  background: var(--bg-page);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display headlines: weight 500, tight tracking */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+}
+
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mono-data {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Blueprint grid backdrop for dark data screens */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Framed dashboard: 6px purple frame, black interior */
+.framed-dashboard {
+  border: 6px solid var(--color-purple-500);
+  border-radius: var(--radius-frame);
+  background: var(--color-ink-950);
+}
+
+/* Primary CTA glow on hover */
+.glow-purple {
+  box-shadow:
+    0 0 0 1px var(--color-purple-500),
+    0 0 48px -8px rgb(109 69 254 / 0.4);
+}
+
+/* Visible focus everywhere */
+:where(a, button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-purple-300);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.12s !important;
+  }
+}
