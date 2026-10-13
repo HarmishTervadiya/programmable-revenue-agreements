@@ -5,11 +5,13 @@ interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
   suffix?: ReactNode;
   error?: string | null;
   hint?: string;
+  /** Override hint color on dark panels (defaults to theme secondary). */
+  hintClass?: string;
 }
 
 /** Light: white fill, 14px radius, mono suffix. Dark: ink-950 + ink-600. */
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
-  ({ suffix, error, hint, className, ...props }, ref) => (
+  ({ suffix, error, hint, hintClass, className, ...props }, ref) => (
     <div className="w-full">
       <div
         className={cn(
@@ -26,11 +28,11 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
           {...props}
         />
         {suffix && (
-          <span className="mono-label shrink-0 text-secondary">{suffix}</span>
+          <span className="mono-label shrink-0 text-xs font-semibold text-secondary">{suffix}</span>
         )}
       </div>
       {(error || hint) && (
-        <p className={cn("mt-1.5 text-sm", error ? "text-red-500" : "text-secondary")}>
+        <p className={cn("mt-1.5 text-xs font-medium", error ? "text-red-500" : hintClass ?? "text-secondary")}>
           {error ?? hint}
         </p>
       )}

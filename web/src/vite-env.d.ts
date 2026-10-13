@@ -5,6 +5,7 @@ interface ImportMetaEnv {
   readonly VITE_SOLANA_RPC: string;
   readonly VITE_PAYMENT_MINT?: string;
   readonly VITE_EXPLORER_CLUSTER?: string;
+  readonly VITE_PROTOCOL_MODE?: string;
 }
 
 interface ImportMeta {

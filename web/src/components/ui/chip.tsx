@@ -14,7 +14,7 @@ export function Chip({
   return (
     <span
       className={cn(
-        "mono-label inline-flex h-5 items-center rounded-full px-2.5",
+        "mono-label inline-flex h-6 items-center rounded-full px-2.5 text-xs font-semibold",
         invert
           ? "bg-white text-ink-950"
           : "bg-ink-900 text-white",
@@ -41,7 +41,7 @@ export function Eyebrow({
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {n && <Chip invert={invert}>{n}</Chip>}
-      <span className="mono-label text-secondary">{label}</span>
+      <span className="mono-label text-xs font-semibold text-secondary">{label}</span>
     </div>
   );
 }
@@ -67,19 +67,21 @@ export function KpiBadge({
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-3 rounded-full bg-surface px-1.5 py-1.5",
+        "inline-flex items-center gap-2.5 rounded-full border border-[var(--border-subtle)] bg-surface px-2 py-1.5",
         invert && "bg-white",
       )}
     >
       <span
         className={cn(
-          "mono-label rounded-full px-3 py-1 tnum",
+          "mono-label rounded-full px-3 py-1 text-xs font-semibold tnum",
           toneCls,
         )}
       >
         {value}
       </span>
-      <span className="body-lg pr-3 text-base text-text-on-light">{label}</span>
+      <span className="pr-3 text-xs font-semibold uppercase tracking-wider text-text-on-light">
+        {label}
+      </span>
     </div>
   );
 }
@@ -103,7 +105,7 @@ export function StatusPill({
   return (
     <span
       className={cn(
-        "mono-label inline-flex items-center gap-2 rounded-full border px-3 py-1",
+        "mono-label inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold",
         className,
       )}
       style={{

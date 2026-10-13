@@ -7,6 +7,8 @@ export interface ToastData {
   id: number;
   message: string;
   signature?: string;
+  /** Link the signature to the explorer (devnet only — mock sigs are fake). */
+  link?: boolean;
   tone: "success" | "error" | "info";
 }
 
@@ -27,9 +29,9 @@ export const useToasts = create<ToastState>((set) => ({
   dismiss: (id) => set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })),
 }));
 
-/** Convenience: toast a successful tx with an explorer link. */
-export function toastTx(message: string, signature: string) {
-  useToasts.getState().push({ message, signature, tone: "success" });
+/** Convenience: toast a successful tx. Pass link=false for mock signatures. */
+export function toastTx(message: string, signature: string, link = true) {
+  useToasts.getState().push({ message, signature, link, tone: "success" });
 }
 export function toastError(message: string) {
   useToasts.getState().push({ message, tone: "error" });
@@ -58,20 +60,24 @@ export function ToastHost() {
             role="status"
           >
             <span className={cn2("h-2 w-2 rounded-full", DOT[t.tone])} />
-            <span className="text-sm">{t.message}</span>
+            <span className="text-sm font-medium">{t.message}</span>
             {t.signature && (
-              <a
-                href={explorerTxUrl(t.signature)}
-                target="_blank"
-                rel="noreferrer"
-                className="mono-data text-purple-300 underline-offset-2 hover:underline"
-              >
-                {t.signature.startsWith("SIM") ? t.signature.slice(0, 10) + "…" : truncAddress(t.signature)}
-              </a>
+              t.link ? (
+                <a
+                  href={explorerTxUrl(t.signature)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mono-data text-xs text-purple-300 underline-offset-2 hover:underline"
+                >
+                  {t.signature.startsWith("SIM") ? t.signature.slice(0, 10) + "…" : truncAddress(t.signature)}
+                </a>
+              ) : (
+                <span className="mono-data text-xs text-white/50">{truncAddress(t.signature)}</span>
+              )
             )}
             <button
               onClick={() => dismiss(t.id)}
-              className="mono-label text-text-muted-dark hover:text-white"
+              className="mono-label text-xs text-text-muted-dark hover:text-white"
               aria-label="Dismiss"
             >
               ✕

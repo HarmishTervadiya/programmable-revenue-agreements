@@ -19,7 +19,7 @@ export function Table({
             <th
               key={i}
               className={cn(
-                "mono-label border-b border-[var(--border-subtle)] pb-2 font-normal text-secondary",
+                "mono-label border-b border-[var(--border-subtle)] pb-2.5 text-xs font-semibold tracking-wider text-secondary",
                 i > 0 && "text-right",
               )}
             >
@@ -30,12 +30,12 @@ export function Table({
       </thead>
       <tbody>
         {rows.map((r, i) => (
-          <tr key={i} className="transition-colors hover:bg-ink-750/60">
+          <tr key={i} className="transition-colors hover:bg-purple-50/60">
             {r.map((c, j) => (
               <td
                 key={j}
                 className={cn(
-                  "border-b border-[var(--border-subtle)] py-3 text-sm",
+                  "border-b border-[var(--border-subtle)] py-3.5 text-sm",
                   j > 0 && "text-right",
                 )}
               >

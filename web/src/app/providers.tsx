@@ -7,8 +7,9 @@ import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MotionConfig } from "motion/react";
 import { RPC_ENDPOINT } from "@/lib/config";
-import { useJourney } from "@/state/journey";
+import { useUi } from "@/state/ui";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,20 +44,22 @@ export function Providers({ children }: { children: ReactNode }) {
     [],
   );
   useMemo(applyTheme, []);
-  const presentation = useJourney((s) => s.presentation);
+  const presentation = useUi((s) => s.presentation);
   useMemo(() => {
     document.documentElement.classList.toggle("presentation", presentation);
   }, [presentation]);
 
   return (
-    <ConnectionProvider endpoint={RPC_ENDPOINT}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>
-          <QueryClientProvider client={queryClient}>
-            {children}
-          </QueryClientProvider>
-        </WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
+    <MotionConfig reducedMotion="user">
+      <ConnectionProvider endpoint={RPC_ENDPOINT}>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletModalProvider>
+            <QueryClientProvider client={queryClient}>
+              {children}
+            </QueryClientProvider>
+          </WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
+    </MotionConfig>
   );
 }

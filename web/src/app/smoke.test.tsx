@@ -1,22 +1,21 @@
-// @vitest-environment jsdom
-import { describe, it, expect, beforeAll, afterEach } from "vitest";
+﻿// @vitest-environment jsdom
+import { describe, it, expect, afterEach } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 
 import { Providers } from "@/app/providers";
-import { Splash } from "@/features/journey/Splash";
-import { Create } from "@/features/create/Create";
-import { OpenAgreement } from "@/features/agreement/OpenAgreement";
-import { AgreementHub } from "@/features/agreement/AgreementHub";
-import { Buy } from "@/features/buy/Buy";
-import { Deposit } from "@/features/deposit/Deposit";
-import { Claim } from "@/features/claim/Claim";
-import { TransferLab } from "@/features/transfer-lab/TransferLab";
-import { Admin } from "@/features/admin/Admin";
-import { WindDown } from "@/features/wind-down/WindDown";
-import { Closer } from "@/features/journey/Closer";
-import { useSim, workedExampleInput } from "@/state/sim";
+import {
+  PRINCE_PERSONAS,
+  ProtocolProvider,
+  createProtocolClient,
+  princeCreateInput,
+  claimableFor,
+} from "@/protocol";
+import { useToasts } from "@/components/ui/toast";
+import { StartScreen } from "@/features/workspace/StartScreen";
+import { Workspace } from "@/features/workspace/Workspace";
+import type { ProtocolClient } from "@/protocol";
 
 // jsdom lacks matchMedia
 if (typeof window.matchMedia !== "function") {
@@ -36,18 +35,35 @@ if (typeof window.matchMedia !== "function") {
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 
-function mount(node: React.ReactNode, path = "/a/demo"): HTMLDivElement {
+function newClient(): ProtocolClient {
+  return createProtocolClient("mock", { speed: 0, startTime: 1_700_000_000 });
+}
+
+async function mount(
+  node: React.ReactNode,
+  path: string,
+  proto: ProtocolClient = newClient(),
+): Promise<HTMLDivElement> {
   container = document.createElement("div");
   document.body.appendChild(container);
-  act(() => {
-    root = createRoot(container!);
+  const target = container;
+  // async act also flushes the provider's initial (promise) snapshot load.
+  await act(async () => {
+    root = createRoot(target);
     root.render(
       <Providers>
-        <MemoryRouter initialEntries={[path]}>{node}</MemoryRouter>
+        <ProtocolProvider client={proto}>
+          <MemoryRouter initialEntries={[path]}>{node}</MemoryRouter>
+        </ProtocolProvider>
       </Providers>,
     );
   });
-  return container;
+  return target;
+}
+
+function activeStep(el: HTMLElement): string {
+  const active = el.querySelector('[aria-current="step"]');
+  return active?.textContent ?? "";
 }
 
 afterEach(() => {
@@ -55,49 +71,164 @@ afterEach(() => {
   container?.remove();
   root = null;
   container = null;
+  useToasts.setState({ toasts: [] });
 });
 
-describe("screen smoke (client render)", () => {
-  beforeAll(() => {
-    useSim.getState().create(workedExampleInput(), "CREATOR");
-    useSim.getState().buy("BUYER", "You", 100n);
-    useSim.getState().depositRevenue("DEPOSITOR", 49_000_000_000n);
+describe("workspace shell", () => {
+  it("start screen offers both scenarios", async () => {
+    const el = await mount(<StartScreen />, "/a/demo");
+    expect(el.textContent).toContain("Revenue deals that");
+    expect(el.textContent).toContain("Prince's startup");
+    expect(el.textContent).toContain("Build your own");
+    // jsdom's selector engine trips on & and ? in attribute values — match the
+    // scenario half of the query only; both cards assert their target.
+    expect(el.querySelector('a[href*="scenario=prince"]')).toBeTruthy();
+    expect(el.querySelector('a[href*="scenario=custom"]')).toBeTruthy();
   });
 
-  const screens: [string, React.ReactNode, string, string][] = [
-    ["Splash", <Splash />, "/", "Revenue deals that"],
-    ["Create", <Create />, "/create", "Turn future revenue"],
-    ["OpenAgreement", <OpenAgreement />, "/open", "Open an existing"],
-    ["AgreementHub", <AgreementHub />, "/a/demo", "Music advance"],
-    ["Buy", <Buy />, "/a/demo/buy", "Own a slice"],
-    ["Deposit", <Deposit />, "/a/demo/deposit", "One deposit"],
-    ["Claim", <Claim />, "/a/demo/claim", "Revenue lands"],
-    ["TransferLab", <TransferLab />, "/a/demo/transfer", "The hook follows"],
-    ["Admin", <Admin />, "/a/demo/admin", "Freeze when needed"],
-    ["WindDown", <WindDown />, "/a/demo/wind-down", "End it cleanly"],
-    ["Closer", <Closer />, "/closer", "Revenue that follows"],
-  ];
+  it("workspace renders the six-step rail and acting-as", async () => {
+    const el = await mount(<Workspace />, "/a/demo/run");
+    expect(el.textContent).toContain("Create agreement");
+    expect(el.textContent).toContain("Expire + close");
+    expect(el.textContent).toContain("ACTING AS");
+    expect(el.textContent).toContain("THE BOARD IS EMPTY");
+  });
 
-  for (const [name, node, path, headline] of screens) {
-    it(`renders ${name} with headline`, () => {
-      const el = mount(node, path);
-      expect(el.textContent).toContain(headline);
+  it("step starts at 01 and advances with ArrowRight", async () => {
+    const el = await mount(<Workspace />, "/a/demo/run");
+    expect(activeStep(el)).toContain("01");
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
     });
+    expect(activeStep(el)).toContain("02");
+    expect(activeStep(el)).toContain("Buy shares");
+  });
+
+  it("URL ?step=claim opens on step 04", async () => {
+    const el = await mount(<Workspace />, "/a/demo/run?scenario=prince&step=claim");
+    expect(activeStep(el)).toContain("04");
+    expect(activeStep(el)).toContain("Claim earnings");
+  });
+
+  it("create agreement lights the board, waterfall and positions", async () => {
+    const proto = newClient();
+    const el = await mount(<Workspace />, "/a/demo/run", proto);
+    await act(async () => {
+      await proto.reset(PRINCE_PERSONAS);
+      await proto.submit({
+        ix: "initialize_agreement",
+        creator: PRINCE_PERSONAS[0].address,
+        input: princeCreateInput(1_700_000_000),
+      });
+    });
+    expect(el.textContent).toContain("Prince's startup");
+    expect(el.textContent).toContain("TIER WATERFALL");
+    expect(el.textContent).toContain("POSITIONS");
+    expect(el.textContent).toContain("REVENUE DEPOSITED");
+  });
+
+  it("event log records the initialize instruction", async () => {
+    const proto = newClient();
+    const el = await mount(<Workspace />, "/a/demo/run", proto);
+    await act(async () => {
+      await proto.reset(PRINCE_PERSONAS);
+      await proto.submit({
+        ix: "initialize_agreement",
+        creator: PRINCE_PERSONAS[0].address,
+        input: princeCreateInput(1_700_000_000),
+      });
+    });
+    expect(el.textContent).toContain("EVENT LOG");
+    expect(el.textContent).toContain("initialize_agreement");
+  });
+});
+
+describe("action panels", () => {
+  async function mountedWithState(stepParam: string) {
+    const proto = newClient();
+    const el = await mount(<Workspace />, `/a/demo/run?scenario=prince&step=${stepParam}`, proto);
+    await act(async () => {
+      await proto.reset(PRINCE_PERSONAS);
+      await proto.submit({
+        ix: "initialize_agreement",
+        creator: PRINCE_PERSONAS[0].address,
+        input: princeCreateInput(1_700_000_000),
+      });
+    });
+    return { proto, el };
   }
 
-  it("hub shows deposit total and cell grid", () => {
-    const el = mount(<AgreementHub />, "/a/demo");
-    expect(el.textContent).toContain("49,000");
-    expect(el.textContent).toContain("TOKEN SUPPLY");
+  it("buy panel shows preset chips and cost math", async () => {
+    const { el } = await mountedWithState("buy");
+    expect(el.textContent).toContain("Buy shares");
+    expect(el.textContent).toContain("NATE");
+    expect(el.textContent).toContain("Sign purchase_share");
   });
 
-  it("claim shows claimable payout from the worked example", () => {
-    const el = mount(<Claim />, "/a/demo/claim");
-    expect(el.textContent).toContain("AVAILABLE TO CLAIM");
-  });
-
-  it("deposit shows per-tier take table", () => {
-    const el = mount(<Deposit />, "/a/demo/deposit");
+  it("deposit panel previews tier routing", async () => {
+    const { el } = await mountedWithState("deposit");
+    expect(el.textContent).toContain("Deposit revenue");
     expect(el.textContent).toContain("WHERE THIS DEPOSIT LANDS");
+    expect(el.textContent).toContain("Sign deposit_revenue");
+  });
+
+  it("claim panel shows claimable after a deposit", async () => {
+    const { proto, el } = await mountedWithState("claim");
+    // Buy then deposit so a holder has claimable.
+    await act(async () => {
+      const nate = PRINCE_PERSONAS.find((p) => p.label === "Nate")!;
+      const studio = PRINCE_PERSONAS.find((p) => p.label === "Studio books")!;
+      await proto.submit({ ix: "purchase_share", buyerId: nate.id, buyerLabel: nate.label, amount: 300_000_000n });
+      await proto.submit({ ix: "deposit_revenue", depositorId: studio.id, amount: 4_000_000_000n });
+    });
+    const a = await proto.getState();
+    const nate = PRINCE_PERSONAS.find((p) => p.label === "Nate")!;
+    expect(claimableFor(a, nate.id)).toBeGreaterThan(0n);
+    expect(el.textContent).toContain("Claim earnings");
+    expect(el.textContent).toContain("TIER SHARE");
+  });
+
+  it("transfer panel lists holders and freeze controls", async () => {
+    const { proto, el } = await mountedWithState("transfer");
+    await act(async () => {
+      const nate = PRINCE_PERSONAS.find((p) => p.label === "Nate")!;
+      await proto.submit({ ix: "purchase_share", buyerId: nate.id, buyerLabel: nate.label, amount: 100_000_000n });
+    });
+    expect(el.textContent).toContain("Transfer + freeze");
+    expect(el.textContent).toContain("TRANSFER POSITION");
+    expect(el.textContent).toContain("COMPLIANCE");
+    expect(el.textContent).toContain("FREEZE");
+  });
+
+  it("wind-down panel shows expire gate and break-it buttons", async () => {
+    const { el } = await mountedWithState("wind-down");
+    expect(el.textContent).toContain("Expire + close");
+    expect(el.textContent).toContain("BREAK-IT");
+    expect(el.textContent).toContain("CLOSE BEFORE EXPIRY");
+    expect(el.textContent).toContain("EXPIRE BEFORE END CONDITION");
+    expect(el.textContent).toContain("EXPIRES IN");
+  });
+
+  it("clock buttons advance the protocol clock", async () => {
+    const { proto, el } = await mountedWithState("");
+    const before = await proto.now();
+    const btn = Array.from(el.querySelectorAll("button")).find((b) => b.textContent === "+30D");
+    expect(btn).toBeTruthy();
+    await act(async () => {
+      btn!.click();
+    });
+    const after = await proto.now();
+    expect(after - before).toBeGreaterThanOrEqual(30 * 86_400 - 5);
+  });
+
+  it("build-your-own builder shows live rule-name chips", async () => {
+    const el = await mount(<Workspace />, "/a/demo/run?scenario=custom&step=create");
+    // PanelShell upper-cases the title.
+    expect(el.textContent).toContain("BUILD YOUR OWN DEAL");
+    expect(el.textContent).toContain("LastTierMustBeUncapped");
+    expect(el.textContent).toContain("SplitsMustSumTo10000");
+    expect(el.textContent).toContain("ExpOrCapRequired");
+    // Fresh builder: last tier uncapped ✓, one tier 100% holders ✓, name empty ✗
+    expect(el.textContent).toContain("NameRequired");
   });
 });

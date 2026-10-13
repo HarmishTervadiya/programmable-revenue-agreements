@@ -77,7 +77,7 @@ export function CellGrid({
         ).map(([s, label]) => (
           <span key={s} className="flex items-center gap-1.5">
             <span className={cn("inline-block h-2.5 w-2.5 rounded-[2px]", fill[s])} />
-            <span className="mono-label text-text-muted-dark">{label}</span>
+            <span className="mono-label text-xs font-medium text-text-muted-dark">{label}</span>
           </span>
         ))}
       </div>

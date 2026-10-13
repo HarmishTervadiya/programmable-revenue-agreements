@@ -144,7 +144,7 @@ export function TierWaterfall({
               </div>
 
               {/* Below: acc_per_token */}
-              <div className="mono-data mt-1.5 flex items-center gap-1 text-text-muted-dark">
+              <div className="mono-data mt-1.5 flex items-center gap-1 text-xs text-text-muted-dark">
                 <span>acc {(Number(t.accPerToken) / Number(PRECISION)).toFixed(2)}</span>
                 <HelpTip
                   content={`Revenue earned per token in this tier. A holder's claim is balance × (acc − last_acc) / 1e12 + pending.`}
@@ -154,7 +154,7 @@ export function TierWaterfall({
               {/* Hover tooltip */}
               {hovered && (
                 <div className="absolute -top-14 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-lg bg-ink-950 px-3 py-2 text-xs text-white ring-1 ring-ink-600">
-                  <div className="mono-label text-text-muted-dark">
+                  <div className="mono-label text-xs font-semibold text-text-muted-dark">
                     TIER {i} · {fmtUsdc(filled, 0)} / {isLast ? "∞" : fmtUsdc(width!, 0)}
                   </div>
                   <div className="mt-1">
@@ -178,7 +178,7 @@ export function TierWaterfall({
               borderLeft: "1px dashed var(--color-amber-500)",
             }}
           >
-            <span className="mono-label absolute -top-6 -translate-x-1/2 text-amber-500">
+            <span className="mono-label absolute -top-6 -translate-x-1/2 text-xs font-bold text-amber-500">
               CAP
             </span>
           </div>
@@ -192,7 +192,7 @@ export function TierWaterfall({
           transition={{ duration: reduced ? 0 : 0.9, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="absolute -top-6 -translate-x-1/2 whitespace-nowrap rounded-full bg-white px-2 py-0.5">
-            <span className="mono-data text-ink-950 tnum">
+            <span className="mono-data text-xs font-bold text-ink-950 tnum">
               {fmtUsdc(totalDeposited, 0)}
             </span>
           </div>
@@ -214,7 +214,7 @@ export function TierWaterfall({
       <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
         <LegendSwatch color="var(--holders-share)" label="Holders share" hatch={false} />
         <LegendSwatch color="var(--creator-share)" label="Wallet party (creator)" hatch />
-        <span className="mono-label text-text-muted-dark">
+        <span className="mono-label text-xs font-semibold text-text-muted-dark">
           CURSOR = TOTAL DEPOSITED
         </span>
       </div>
@@ -329,7 +329,7 @@ function LegendSwatch({
             : color,
         }}
       />
-      <span className="mono-label text-text-muted-dark">{label}</span>
+      <span className="mono-label text-xs font-medium text-text-muted-dark">{label}</span>
     </span>
   );
 }
