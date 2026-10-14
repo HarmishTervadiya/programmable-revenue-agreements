@@ -147,8 +147,11 @@ export function DepositPanel({
         )}
 
         <Button onClick={deposit} disabled={!valid} loading={busy} className="w-full">
-          Sign deposit_revenue
+          Deposit revenue
         </Button>
+        <p className="mono-label text-xs text-secondary">
+          ROUTED BY TIER WATERFALL · <span className="opacity-70">deposit_revenue</span>
+        </p>
       </div>
     </PanelShell>
   );

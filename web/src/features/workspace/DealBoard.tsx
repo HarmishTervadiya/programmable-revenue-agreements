@@ -30,6 +30,7 @@ const fadeUp = {
  */
 export function DealBoard({ a, resolvedAs }: { a: AgreementState | null; resolvedAs: string | null }) {
   const setStep = useUi((s) => s.setStep);
+  const step = useUi((s) => s.step);
 
   if (!a) {
     return (
@@ -45,12 +46,14 @@ export function DealBoard({ a, resolvedAs }: { a: AgreementState | null; resolve
           Step 01 mints the instrument: fixed supply, tier waterfall, expiry and
           claim window — one instruction, one signature.
         </p>
-        <button
-          onClick={() => setStep("create")}
-          className="mono-label mt-6 inline-flex h-11 items-center rounded-full bg-accent px-5 text-xs font-semibold text-white transition-colors hover:bg-purple-400"
-        >
-          GO TO STEP 01 →
-        </button>
+        {step !== "create" && (
+          <button
+            onClick={() => setStep("create")}
+            className="mono-label mt-6 inline-flex h-11 items-center rounded-full bg-accent px-5 text-xs font-semibold text-white transition-colors hover:bg-purple-400"
+          >
+            GO TO STEP 01 →
+          </button>
+        )}
       </motion.section>
     );
   }

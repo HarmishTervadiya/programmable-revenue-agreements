@@ -17,7 +17,7 @@ const buttonVariants = cva(
         pillLink:
           "bg-white text-ink-950 h-11 px-5 font-normal hover:bg-purple-100",
         danger:
-          "h-11 px-5 border text-red-500 border-red-500/40 bg-red-500/15 hover:bg-red-500/25",
+          "h-11 px-5 border text-danger border-red-500/40 bg-red-500/15 hover:bg-red-500/25",
       },
       size: {
         md: "text-base",

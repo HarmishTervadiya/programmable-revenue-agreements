@@ -146,8 +146,11 @@ export function BuyPanel({
         )}
 
         <Button onClick={buy} disabled={!valid} loading={busy} className="w-full">
-          Sign purchase_share
+          Buy shares
         </Button>
+        <p className="mono-label text-xs text-secondary">
+          USDC TO CREATOR · TOKENS TO YOU · <span className="opacity-70">purchase_share</span>
+        </p>
       </div>
     </PanelShell>
   );

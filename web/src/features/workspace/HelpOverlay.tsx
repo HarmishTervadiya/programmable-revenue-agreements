@@ -21,7 +21,7 @@ export function HelpOverlay() {
       onClick={close}
     >
       <div
-        className="w-full max-w-md rounded-panel border border-[var(--border-strong)] bg-surface p-6 shadow-2xl"
+        className="w-full max-w-lg rounded-panel border border-[var(--border-strong)] bg-surface p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">

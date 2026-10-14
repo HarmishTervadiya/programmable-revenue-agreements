@@ -32,6 +32,7 @@ export function Rail({
   const setAs = useUi((s) => s.setAs);
   const setAutoplay = useUi((s) => s.setAutoplay);
   const current = stepIndex(step);
+  const isDevnet = mode === "devnet";
 
   return (
     <nav
@@ -39,7 +40,7 @@ export function Rail({
       className="rounded-panel border border-[var(--border-subtle)] bg-surface p-3 text-primary"
     >
       <p className="mono-label mb-2.5 mt-1 px-3 text-xs font-bold tracking-wider text-secondary">
-        {scenario === "prince" ? "PRINCE'S STARTUP" : "BUILD YOUR OWN"}
+        {mode === "devnet" ? "PRA · DEVNET" : scenario === "prince" ? "PRINCE'S STARTUP" : "BUILD YOUR OWN"}
       </p>
 
       <ol className="space-y-1">
@@ -51,7 +52,7 @@ export function Rail({
                 onClick={() => setStep(s.id as StepId)}
                 aria-current={state === "active" ? "step" : undefined}
                 className={cn(
-                  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-colors",
+                  "flex w-full items-center gap-2.5 rounded-lg px-3 py-3 text-left transition-colors",
                   state === "active" &&
                     "bg-accent text-white shadow-[0_0_24px_-6px_rgb(109_69_254/0.4)]",
                   state === "done" && "text-primary hover:bg-purple-50",
@@ -78,7 +79,15 @@ export function Rail({
         })}
       </ol>
 
-      <p className="mono-label mb-2 mt-5 px-3 text-xs font-bold tracking-wider text-secondary">ACTING AS</p>
+      <p className="mono-label mb-2 mt-5 px-3 text-xs font-bold tracking-wider text-secondary">
+        {isDevnet ? "YOUR WALLET ACTS" : "ACTING AS"}
+      </p>
+      {isDevnet ? (
+        <p className="px-3 text-xs leading-relaxed text-secondary">
+          The connected wallet signs every action. There are no demo personas on devnet.
+        </p>
+      ) : (
+      <>
       <div role="radiogroup" aria-label="Active persona" className="space-y-1">
         {personas.map((p) => {
           const on = p.id === resolvedAs;
@@ -90,7 +99,7 @@ export function Rail({
               aria-checked={on}
               onClick={() => setAs(p.id)}
               className={cn(
-                "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors",
+                "flex w-full items-center gap-2 rounded-lg px-3 py-3 text-left transition-colors",
                 on
                   ? "bg-purple-50 text-accent ring-1 ring-purple-500/40"
                   : "text-secondary hover:bg-purple-50 hover:text-primary",
@@ -105,13 +114,25 @@ export function Rail({
         })}
       </div>
       <p className="mt-2 px-3 text-xs text-secondary">Auto-set per step · 1-4 to override</p>
+      </>
+      )}
 
       <div className="mt-5 border-t border-[var(--border-subtle)] pt-4">
+        {isDevnet ? (
+          <div className="px-3">
+            <span className="mono-label text-xs font-semibold text-secondary">DEVNET TIME</span>
+            <p className="mono-data mt-1 text-xs font-semibold text-accent tnum">{fmtTime(clock)}</p>
+            <p className="mt-1 text-xs leading-relaxed text-secondary">
+              Real chain time. Expiry follows the agreement&apos;s date or revenue cap.
+            </p>
+          </div>
+        ) : (
+        <>
         <div className="flex items-center justify-between px-3">
           <span className="mono-label text-xs font-semibold text-secondary">PROTOCOL CLOCK</span>
           <span className="mono-data text-xs font-semibold text-accent tnum">{fmtTime(clock)}</span>
         </div>
-        <div className="mt-2 flex flex-wrap gap-1.5 px-3">
+        <div className="mt-2 flex flex-wrap gap-2 px-3">
           <ClockBtn label="+1D" onClick={() => onAdvanceDays(1)} />
           <ClockBtn label="+30D" onClick={() => onAdvanceDays(30)} />
           <ClockBtn label="+1Y" onClick={() => onAdvanceDays(365)} />
@@ -139,6 +160,8 @@ export function Rail({
           />
           AUTOPLAY {autoplay ? "ON" : "OFF"}
         </button>
+        </>
+        )}
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-2 border-t border-[var(--border-subtle)] px-1 pt-4">
@@ -149,7 +172,7 @@ export function Rail({
           onClick={onReset}
           className="mono-label text-xs font-medium text-secondary underline-offset-4 hover:text-primary hover:underline"
         >
-          RESET (R)
+          {mode === "mock" ? "RESET (R)" : "NEW AGREEMENT"}
         </button>
       </div>
     </nav>

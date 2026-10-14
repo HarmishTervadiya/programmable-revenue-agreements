@@ -10,19 +10,21 @@ import {
   useProtocolSnapshot,
   type AgreementState,
 } from "@/protocol";
+import { DevnetClient } from "@/protocol/devnetClient";
 import { PanelShell } from "./CreatePanel";
 import { guardSubmit, txBusy } from "./util";
 
 /**
  * Step 06 — expire + close. Expiry burns the unsold treasury and opens the
- * claim window; close drains the vault. Break-it buttons fire known-failing
- * instructions to show the plain-sentence errors.
+ * claim window; close drains the vault. In mock demos a "break-it" box shows
+ * plain-sentence rejections; on devnet it stays hidden (real funds).
  */
 export function WindDownPanel({ state, clock }: { state: AgreementState | null; clock: number }) {
   const client = useProtocol();
   const { tx } = useProtocolSnapshot();
   const [submitting, setSubmitting] = useState(false);
   const [breakError, setBreakError] = useState<string | null>(null);
+  const isDevnet = client instanceof DevnetClient;
 
   if (!state) return null;
 
@@ -60,7 +62,7 @@ export function WindDownPanel({ state, clock }: { state: AgreementState | null; 
   const statusPill = (s: AgreementState["status"]) => {
     const color =
       s === "active"
-        ? "text-mint-700 border-mint-700/40 bg-mint-700/10"
+        ? "text-healthy border-mint-700/40 bg-mint-700/10"
         : s === "expired"
           ? "text-amber-800 border-amber-500/40 bg-amber-500/10"
           : "text-secondary border-purple-500/20 bg-purple-50";
@@ -116,7 +118,7 @@ export function WindDownPanel({ state, clock }: { state: AgreementState | null; 
             <p className="mt-2 text-sm font-medium text-amber-900">{expireReason(state, clock)}</p>
           )}
           <Button onClick={expire} disabled={!expireOk || busy} loading={busy} className="mt-3 w-full">
-            Sign expire_agreement
+            Expire agreement
           </Button>
         </div>
 
@@ -127,11 +129,12 @@ export function WindDownPanel({ state, clock }: { state: AgreementState | null; 
             <p className="mt-2 text-sm font-medium text-amber-900">{closeOk.reason}</p>
           )}
           <Button onClick={close} disabled={!closeOk.ok || busy} loading={busy} className="mt-3 w-full">
-            Sign close_agreement
+            Close agreement
           </Button>
         </div>
 
-        {/* Break-it section */}
+        {/* Break-it section (mock demos only — hidden on devnet with real funds) */}
+        {!isDevnet && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3.5">
           <span className="mono-label text-xs font-bold text-red-600">BREAK-IT — WATCH THE ERROR</span>
           <p className="mt-2 text-sm leading-relaxed text-secondary">
@@ -151,6 +154,7 @@ export function WindDownPanel({ state, clock }: { state: AgreementState | null; 
             </p>
           )}
         </div>
+        )}
       </div>
     </PanelShell>
   );

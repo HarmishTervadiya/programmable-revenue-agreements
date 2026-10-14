@@ -38,7 +38,7 @@ export function TxDrawer({
           animate={{ x: 0 }}
           exit={{ x: "100%" }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-ink-700 bg-ink-950/95 p-6 backdrop-blur"
+          className="fixed right-0 top-0 z-50 flex h-full w-full max-w-lg flex-col border-l border-ink-700 bg-ink-950/95 p-6 backdrop-blur"
         >
           <div className="flex items-center justify-between">
             <span className="mono-label text-xs font-semibold text-text-muted-dark">TRANSACTION</span>
@@ -104,7 +104,7 @@ export function TxDrawer({
                 <summary className="mono-label cursor-pointer text-text-muted-dark hover:text-white">
                   SHOW LOGS
                 </summary>
-                <pre className="mt-2 max-h-40 overflow-auto rounded-lg bg-black p-3 text-[11px] leading-4 text-mint-400/90">
+                <pre className="mt-2 max-h-40 overflow-auto rounded-lg bg-black p-3 text-xs leading-4 text-mint-400/90">
                   {logs.join("\n")}
                 </pre>
               </details>

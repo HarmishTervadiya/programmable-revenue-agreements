@@ -44,14 +44,16 @@
 }
 
 @theme inline {
-  /* Semantic aliases resolve per theme root (see base.css .theme-light / .theme-dark) */
-  --color-bg-page: var(--bg-page);
-  --color-bg-surface: var(--bg-surface);
-  --color-bg-surface-inset: var(--bg-surface-inset);
-  --color-border-subtle: var(--border-subtle);
-  --color-border-strong: var(--border-strong);
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
+  /* Semantic aliases resolve per theme root (see base.css .theme-light / .theme-dark).
+     Key names MUST match the utilities used in code: --color-{name} powers
+     bg-{name} / text-{name} / border-{name}. (Doubled names like
+     --color-bg-surface silently generate nothing — past Blocker, see report.) */
+  --color-surface: var(--bg-surface);
+  --color-surface-inset: var(--bg-surface-inset);
+  --color-subtle: var(--border-subtle);
+  --color-strong: var(--border-strong);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
   --color-accent: var(--accent);
   --color-holders-share: var(--holders-share);
   --color-creator-share: var(--creator-share);

@@ -67,7 +67,7 @@ export function ToastHost() {
                   href={explorerTxUrl(t.signature)}
                   target="_blank"
                   rel="noreferrer"
-                  className="mono-data text-xs text-purple-300 underline-offset-2 hover:underline"
+                  className="mono-data text-xs text-purple-300 underline underline-offset-2 hover:text-white"
                 >
                   {t.signature.startsWith("SIM") ? t.signature.slice(0, 10) + "…" : truncAddress(t.signature)}
                 </a>

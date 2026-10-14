@@ -12,10 +12,10 @@ export { mockBase58 } from "./ids";
 export { MockClient, type MockClientOptions } from "./mockClient";
 export { DevnetClient } from "./devnetClient";
 
-/** VITE_PROTOCOL_MODE=mock (default) | devnet. */
+/** VITE_PROTOCOL_MODE=devnet (default) | mock. Mock is for offline dev/tests. */
 export function protocolMode(): ProtocolMode {
   const raw = import.meta.env?.VITE_PROTOCOL_MODE as string | undefined;
-  return raw === "devnet" ? "devnet" : "mock";
+  return raw === "mock" ? "mock" : "devnet";
 }
 
 /** The single swap point: components never construct this themselves. */

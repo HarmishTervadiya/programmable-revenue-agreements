@@ -80,7 +80,7 @@ export function ClaimPanel({ state, persona }: { state: AgreementState | null; p
             loading={busy}
             className="mt-3 w-full"
           >
-            Sign claim_tier_share
+            Claim revenue
           </Button>
           {holderClaim === 0n && !frozen && (
             <p className="mono-label mt-2 text-xs text-secondary">NOTHING TO CLAIM YET — WAIT FOR A DEPOSIT.</p>
@@ -100,7 +100,7 @@ export function ClaimPanel({ state, persona }: { state: AgreementState | null; p
               loading={busy}
               className="mt-3 w-full"
             >
-              Sign claim_party_share
+              Claim wallet share
             </Button>
             {partyOwed === 0n && (
               <p className="mono-label mt-2 text-xs text-secondary">NO SPLIT OWED — WAIT FOR A TIER TO FILL.</p>

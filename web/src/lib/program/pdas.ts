@@ -1,15 +1,17 @@
 import { PublicKey } from "@solana/web3.js";
 import { PROGRAM_ID } from "@/lib/config";
 
-export const AGREEMENT_SEED = Buffer.from("agreement");
-export const TIER_SEED = Buffer.from("tier");
-export const CLAIM_SEED = Buffer.from("claim");
-export const VAULT_SEED = Buffer.from("vault");
-export const TREASURY_SEED = Buffer.from("treasury");
-export const EXTRA_METAS_SEED = Buffer.from("extra-account-metas");
+const enc = new TextEncoder();
 
-function toLeBytes(n: bigint): Buffer {
-  const b = Buffer.alloc(8);
+export const AGREEMENT_SEED = enc.encode("agreement");
+export const TIER_SEED = enc.encode("tier");
+export const CLAIM_SEED = enc.encode("claim");
+export const VAULT_SEED = enc.encode("vault");
+export const TREASURY_SEED = enc.encode("treasury");
+export const EXTRA_METAS_SEED = enc.encode("extra-account-metas");
+
+function toLeBytes(n: bigint): Uint8Array {
+  const b = new Uint8Array(8);
   let v = n;
   for (let i = 0; i < 8; i++) {
     b[i] = Number(v & 0xffn);
@@ -18,19 +20,16 @@ function toLeBytes(n: bigint): Buffer {
   return b;
 }
 
-function find(...seeds: (Buffer | Uint8Array)[]): PublicKey {
-  return PublicKey.findProgramAddressSync(
-    seeds.map((s) => new Uint8Array(s)),
-    PROGRAM_ID,
-  )[0];
+function find(...seeds: Uint8Array[]): PublicKey {
+  return PublicKey.findProgramAddressSync(seeds, PROGRAM_ID)[0];
 }
 
 export function agreementPda(creator: PublicKey, agreementId: bigint): PublicKey {
-  return find(AGREEMENT_SEED, creator.toBuffer(), toLeBytes(agreementId));
+  return find(AGREEMENT_SEED, creator.toBytes(), toLeBytes(agreementId));
 }
 
 export function tierPda(config: PublicKey, index: number): PublicKey {
-  return find(TIER_SEED, config.toBuffer(), Buffer.from([index]));
+  return find(TIER_SEED, config.toBytes(), new Uint8Array([index]));
 }
 
 export function tierPdas(config: PublicKey): PublicKey[] {
@@ -38,17 +37,17 @@ export function tierPdas(config: PublicKey): PublicKey[] {
 }
 
 export function claimPda(config: PublicKey, holder: PublicKey): PublicKey {
-  return find(CLAIM_SEED, config.toBuffer(), holder.toBuffer());
+  return find(CLAIM_SEED, config.toBytes(), holder.toBytes());
 }
 
 export function vaultPda(config: PublicKey): PublicKey {
-  return find(VAULT_SEED, config.toBuffer());
+  return find(VAULT_SEED, config.toBytes());
 }
 
 export function treasuryPda(config: PublicKey): PublicKey {
-  return find(TREASURY_SEED, config.toBuffer());
+  return find(TREASURY_SEED, config.toBytes());
 }
 
 export function extraMetasPda(mint: PublicKey): PublicKey {
-  return find(EXTRA_METAS_SEED, mint.toBuffer());
+  return find(EXTRA_METAS_SEED, mint.toBytes());
 }

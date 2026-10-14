@@ -124,8 +124,11 @@ export function TransferPanel({
                 </ul>
               )}
               <Button onClick={transfer} disabled={!valid} loading={busy} className="w-full">
-                Sign transfer_hook
+                Transfer shares
               </Button>
+              <p className="mono-label text-xs text-secondary">
+                EARNINGS SNAPSHOT BY TRANSFER HOOK · <span className="opacity-70">transfer_hook</span>
+              </p>
             </div>
           </div>
         ) : (
@@ -172,7 +175,7 @@ export function TransferPanel({
                     loading={busy}
                     variant="secondary"
                     size="sm"
-                    className={frozen ? "border-mint-700/40 text-mint-700" : "border-red-500/40 text-red-500"}
+                    className={frozen ? "border-mint-700/40 text-healthy" : "border-red-500/40 text-danger"}
                   >
                     {frozen ? "UNFREEZE" : "FREEZE"}
                   </Button>

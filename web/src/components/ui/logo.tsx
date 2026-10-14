@@ -68,7 +68,7 @@ export function Wordmark({
 export function Lockup({ inverted = false }: { inverted?: boolean }) {
   return (
     <div className="flex items-center gap-2.5">
-      <Mark size={24} inverted={inverted} />
+      <Mark size={28} inverted={inverted} />
       <Wordmark inverted={inverted} />
     </div>
   );

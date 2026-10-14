@@ -170,10 +170,11 @@ function SimplePanel({
         </dl>
 
         <Button onClick={submit} disabled={!valid} loading={busy} className="w-full">
-          Sign initialize_agreement
+          Create agreement
         </Button>
         <p className="mono-label text-xs text-secondary">
-          ONE INSTRUCTION · {prefilled.tiers.length} TIERS · SUPPLY MINTED, AUTHORITY REVOKED
+          ONE TRANSACTION · {prefilled.tiers.length} TIERS · SUPPLY MINTED, AUTHORITY REVOKED ·{" "}
+          <span className="opacity-70">initialize_agreement</span>
         </p>
       </div>
     </PanelShell>
@@ -390,7 +391,7 @@ function BuilderPanel({
               key={r.code}
               title={r.msg}
               className={`mono-label rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                r.ok ? "border-mint-700/50 bg-mint-700/10 text-mint-700" : "border-red-500/40 bg-red-500/10 text-red-500"
+                r.ok ? "border-mint-700/50 bg-mint-700/10 text-healthy" : "border-red-500/40 bg-red-500/10 text-danger"
               }`}
             >
               {r.ok ? "✓" : "✗"} {r.code}
@@ -399,7 +400,7 @@ function BuilderPanel({
         </div>
 
         <Button onClick={submit} disabled={!allOk || busy} loading={busy} className="w-full">
-          Sign initialize_agreement
+          Create agreement
         </Button>
         <p className="mono-label text-xs text-secondary">
           {tiers.length} TIER{tiers.length === 1 ? "" : "S"} · DEPOSITOR {depositorP.label.toUpperCase()} · ADMIN{" "}

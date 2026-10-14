@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useWorld } from "@/app/providers";
 import { Eyebrow } from "@/components/ui/chip";
 import { Lockup } from "@/components/ui/logo";
 import { ToastHost, toastError, toastTx } from "@/components/ui/toast";
 import { TxDrawer, type TxStage } from "@/components/ui/tx-drawer";
+import { WalletButton } from "@/components/ui/wallet-button";
+import { ConfigAlert, NetworkBanner } from "@/components/ui/network-banner";
 import { cn } from "@/lib/cn";
 import {
   canClose,
@@ -16,8 +19,10 @@ import {
   useProtocolSnapshot,
   type DemoScenario,
 } from "@/protocol";
+import { DevnetClient } from "@/protocol/devnetClient";
 import { stepDef, stepIndex, useUi, type StepId } from "@/state/ui";
 import { ActionPanel } from "./ActionPanel";
+import { AgreementSelector } from "./AgreementSelector";
 import { DealBoard } from "./DealBoard";
 import { EventLog } from "./EventLog";
 import { Rail } from "./Rail";
@@ -189,20 +194,44 @@ export function Workspace() {
 
   const scenario = scenarioById(scenarioId);
   const personas = scenario.personas;
-  const resolvedAs =
+  const mockResolvedAs =
     explicitAs && personas.some((p) => p.id === explicitAs)
       ? explicitAs
       : (personas.find((p) => p.role === stepDef(step).role) ?? personas[0])?.id ?? null;
-  const persona = personas.find((p) => p.id === resolvedAs) ?? null;
+  const mockPersona = personas.find((p) => p.id === mockResolvedAs) ?? null;
+  const isDevnet = client.mode === "devnet";
+  const { connected: walletConnected, publicKey } = useWallet();
 
-  // Fresh demo on entering the workspace (and whenever the scenario flips).
+  // Devnet identity = the connected wallet. The step's default role keeps
+  // panels ungated; the program itself enforces real authorization
+  // (depositor-only deposits, admin-only freeze, creator-only close).
+  const walletPersona =
+    isDevnet && walletConnected && publicKey
+      ? {
+          id: publicKey.toBase58(),
+          label: `${publicKey.toBase58().slice(0, 4)}…${publicKey.toBase58().slice(-4)}`,
+          role: stepDef(step).role,
+          address: publicKey.toBase58(),
+        } as const
+      : null;
+  const persona = walletPersona ?? mockPersona;
+  const resolvedAs = walletPersona ? walletPersona.id : mockResolvedAs;
+
+  // Mock mode only: fresh in-memory demo on entering the workspace.
+  // Devnet agreements are permanent — never reset, just read chain state.
   useEffect(() => {
-    void client.reset(personas);
+    if (client.mode === "mock") void client.reset(personas);
+    else void client.getState().catch(() => undefined);
   }, [client, personas]);
 
   const onReset = useCallback(() => {
-    void client.reset(personas);
-    setStep("create");
+    if (client.mode === "mock") {
+      void client.reset(personas);
+      setStep("create");
+    } else if (client instanceof DevnetClient) {
+      client.setActiveConfig(null);
+      setStep("create");
+    }
   }, [client, personas, setStep]);
 
   useWorkspaceKeys(personas, onReset);
@@ -217,9 +246,9 @@ export function Workspace() {
       ? Math.max(0, Math.ceil((state.expTime - clock) / 86_400))
       : null;
 
-  // — Autoplay ————————————————————————————————————————
+  // — Autoplay (mock demos only; devnet uses real wallets + real time) —
   useEffect(() => {
-    if (!autoplay) return;
+    if (!autoplay || client.mode !== "mock") return;
     let cancelled = false;
     const run = async () => {
       try {
@@ -278,35 +307,37 @@ export function Workspace() {
   const current = stepIndex(step);
 
   return (
-    <div className="theme-light min-h-screen bg-[var(--bg-page)] text-primary">
+    <div className="theme-light min-h-dvh bg-[var(--bg-page)] text-primary">
       <header className="sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--bg-page)]/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex min-w-0 items-center gap-4">
-            <Link to="/a/demo" aria-label="Back to scenarios">
+            <Link to="/" aria-label="Back to home">
               <Lockup />
             </Link>
             <span className="hidden h-5 w-px bg-purple-500/20 md:block" aria-hidden />
             <Eyebrow n={def.n} label={`STEP — ${def.label.toUpperCase()}`} className="hidden md:flex" />
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={() => useUi.getState().setPresentation(!presentation)}
-              aria-pressed={presentation}
-              title="Presentation mode (P)"
-              className="mono-label flex h-8 items-center gap-1.5 rounded-full border border-purple-500/25 px-3 text-xs font-semibold text-secondary transition-colors hover:border-accent hover:text-accent"
-            >
-              Aa
-            </button>
+            <NetworkBanner className="hidden xl:flex" />
+            {!isDevnet && (
+              <button
+                onClick={() => useUi.getState().setPresentation(!presentation)}
+                aria-pressed={presentation}
+                title="Presentation mode (P)"
+                className="mono-label hidden h-11 items-center gap-1.5 rounded-full border border-purple-500/25 px-3 text-xs font-semibold text-secondary transition-colors hover:border-accent hover:text-accent sm:flex"
+              >
+                Aa
+              </button>
+            )}
             <button
               onClick={() => useUi.getState().toggleHelp()}
               title="Keyboard shortcuts (?)"
-              className="mono-label flex h-8 w-8 items-center justify-center rounded-full border border-purple-500/25 text-xs font-semibold text-secondary transition-colors hover:border-accent hover:text-accent"
+              aria-label="Show keyboard shortcuts"
+              className="mono-label hidden h-11 w-11 items-center justify-center rounded-full border border-purple-500/25 text-xs font-semibold text-secondary transition-colors hover:border-accent hover:text-accent sm:flex"
             >
               ?
             </button>
-            <span className="mono-label rounded-full border border-purple-500/15 bg-surface px-3 py-1.5 text-xs font-semibold text-secondary">
-              {client.mode === "mock" ? "MOCK" : "DEVNET"}
-            </span>
+            <WalletButton compact />
           </div>
         </div>
       </header>
@@ -333,7 +364,7 @@ export function Workspace() {
                 key={id}
                 onClick={() => setStep(id)}
                 className={cn(
-                  "mono-label inline-flex h-8 shrink-0 items-center rounded-full px-3 text-xs font-semibold transition-colors",
+                  "mono-label inline-flex h-11 shrink-0 items-center rounded-full px-4 text-xs font-semibold transition-colors",
                   i === current
                     ? "bg-accent text-white"
                     : i < current
@@ -346,12 +377,19 @@ export function Workspace() {
             ))}
           </div>
           <div className="mt-2 flex w-max gap-2">
-            {personas.map((p) => (
+            {isDevnet ? (
+              <span className="mono-label inline-flex h-11 shrink-0 items-center rounded-full border border-[var(--border-subtle)] bg-surface px-4 text-xs font-semibold text-secondary">
+                {walletConnected && publicKey
+                  ? `ACTING AS ${publicKey.toBase58().slice(0, 4)}…${publicKey.toBase58().slice(-4)}`
+                  : "CONNECT WALLET TO ACT"}
+              </span>
+            ) : (
+            personas.map((p) => (
               <button
                 key={p.id}
                 onClick={() => useUi.getState().setAs(p.id)}
                 className={cn(
-                  "mono-label inline-flex h-8 shrink-0 items-center rounded-full px-3 text-xs font-semibold transition-colors",
+                  "mono-label inline-flex h-11 shrink-0 items-center rounded-full px-4 text-xs font-semibold transition-colors",
                   p.id === resolvedAs
                     ? "bg-accent text-white"
                     : "border border-[var(--border-subtle)] bg-surface text-secondary",
@@ -359,17 +397,30 @@ export function Workspace() {
               >
                 {p.label}
               </button>
-            ))}
+            ))
+            )}
           </div>
         </div>
 
         {/* Center board */}
-        <main className="min-w-0">
+        <main className="min-w-0 space-y-4">
+          {isDevnet && !walletConnected && (
+            <div className="rounded-panel border border-purple-500/30 bg-surface p-5" role="status">
+              <p className="text-sm font-semibold text-primary">Connect your wallet to use the app</p>
+              <p className="mt-1 text-sm text-secondary">
+                Wallet sign-in is the only account you need — no email, no password. You can browse
+                agreements below, but every action (create, buy, deposit, claim) signs with your wallet
+                on Solana devnet.
+              </p>
+            </div>
+          )}
+          {isDevnet && <ConfigAlert />}
           <DealBoard a={state} resolvedAs={resolvedAs} />
         </main>
 
         {/* Right panel: action + event log */}
         <aside className="min-w-0 space-y-4">
+          {isDevnet && <AgreementSelector />}
           <ActionPanel step={step} scenario={scenario} state={state} persona={persona} clock={clock} />
           <div className="flex items-center justify-between">
             <button
@@ -377,9 +428,9 @@ export function Workspace() {
               aria-expanded={logOpen}
               className="mono-label text-xs font-semibold text-secondary transition-colors hover:text-primary"
             >
-              {logOpen ? "▾" : "▸"} EVENT LOG <span className="text-secondary/80">({log.length}) · D</span>
+              {logOpen ? "▾" : "▸"} {isDevnet ? "ACTIVITY" : "EVENT LOG"} <span>({log.length}){isDevnet ? "" : " · D"}</span>
             </button>
-            <span className="mono-label text-xs text-secondary/80">← → STEPS</span>
+            {!isDevnet && <span className="mono-label text-xs text-secondary">← → STEPS</span>}
           </div>
           {logOpen && <EventLog log={log} />}
         </aside>

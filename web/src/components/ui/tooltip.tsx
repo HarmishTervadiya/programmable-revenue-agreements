@@ -40,7 +40,7 @@ export function HelpTip({ content }: { content: ReactNode }) {
       <button
         type="button"
         aria-label="Explain"
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-[var(--border-strong)] text-[11px] font-semibold leading-none text-secondary hover:border-accent hover:text-accent"
+        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border-strong)] text-xs font-semibold leading-none text-secondary hover:border-accent hover:text-accent"
       >
         ?
       </button>

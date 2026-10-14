@@ -24,7 +24,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
       >
         <input
           ref={ref}
-          className="mono-data min-w-0 flex-1 bg-transparent text-right text-base outline-none placeholder:text-secondary/80"
+          className="mono-data min-w-0 flex-1 bg-transparent text-right text-base outline-none placeholder:text-secondary"
           {...props}
         />
         {suffix && (
@@ -32,7 +32,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
         )}
       </div>
       {(error || hint) && (
-        <p className={cn("mt-1.5 text-xs font-medium", error ? "text-red-500" : hintClass ?? "text-secondary")}>
+        <p className={cn("mt-1.5 text-xs font-medium", error ? "text-danger" : hintClass ?? "text-secondary")}>
           {error ?? hint}
         </p>
       )}

@@ -7,8 +7,21 @@ export const PROGRAM_ID = new PublicKey(
   import.meta.env.VITE_PROGRAM_ID || DEFAULT_PROGRAM_ID,
 );
 
-export const RPC_ENDPOINT =
-  import.meta.env.VITE_SOLANA_RPC ?? "https://api.devnet.solana.com";
+export const RPC_ENDPOINT: string = (() => {
+  // Helius wins when a key is present (explicit setup choice). Otherwise an
+  // explicit VITE_SOLANA_RPC is honored, falling back to the public endpoint.
+  const heliusKey = import.meta.env.VITE_HELIUS_API_KEY as string | undefined;
+  if (heliusKey) return `https://devnet.helius-rpc.com/?api-key=${heliusKey}`;
+  return (
+    (import.meta.env.VITE_SOLANA_RPC as string | undefined) ??
+    "https://api.devnet.solana.com"
+  );
+})();
+
+/** Which RPC backs the app — shown in the network banner so it's always visible. */
+export const RPC_PROVIDER: string = (import.meta.env.VITE_HELIUS_API_KEY as string | undefined)
+  ? "HELIUS"
+  : "PUBLIC";
 
 const paymentMint = import.meta.env.VITE_PAYMENT_MINT as string | undefined;
 export const PAYMENT_MINT = paymentMint ? new PublicKey(paymentMint) : null;

@@ -58,11 +58,13 @@ export function KpiBadge({
   tone?: "purple" | "black" | "coral";
   invert?: boolean;
 }) {
+  // Chip text must keep ≥4.5:1 on its fill (UI-UX-RULES §3): white passes on
+  // purple-500 and ink-900, but bright coral needs dark ink text (7.2:1).
   const toneCls =
     tone === "purple"
       ? "bg-accent text-white"
       : tone === "coral"
-        ? "bg-coral-500 text-white"
+        ? "bg-coral-500 text-ink-950"
         : "bg-ink-900 text-white";
   return (
     <div
@@ -90,7 +92,8 @@ const STATUS_TONES = {
   active: "var(--healthy)",
   expired: "var(--color-amber-500)",
   closed: "var(--text-secondary)",
-  frozen: "var(--color-red-500)",
+  // Semantic danger token: bright red on dark, darkened red on light (≥4.5:1).
+  frozen: "var(--danger)",
 } as const;
 
 /** Status pill: mono uppercase, tinted fill, 6px dot. */

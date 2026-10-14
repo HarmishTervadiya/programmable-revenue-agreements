@@ -14,6 +14,7 @@ import {
 } from "@/protocol";
 import { useToasts } from "@/components/ui/toast";
 import { StartScreen } from "@/features/workspace/StartScreen";
+import { Landing } from "@/features/landing/Landing";
 import { Workspace } from "@/features/workspace/Workspace";
 import type { ProtocolClient } from "@/protocol";
 
@@ -75,6 +76,14 @@ afterEach(() => {
 });
 
 describe("workspace shell", () => {
+  it("landing explains the product with wallet-only sign-in", async () => {
+    const el = await mount(<Landing />, "/");
+    expect(el.textContent).toContain("Revenue deals that");
+    expect(el.textContent).toContain("Connect wallet");
+    expect(el.textContent).toContain("How it works");
+    expect(el.textContent).toContain("What the program guarantees");
+  });
+
   it("start screen offers both scenarios", async () => {
     const el = await mount(<StartScreen />, "/a/demo");
     expect(el.textContent).toContain("Revenue deals that");
@@ -162,14 +171,14 @@ describe("action panels", () => {
     const { el } = await mountedWithState("buy");
     expect(el.textContent).toContain("Buy shares");
     expect(el.textContent).toContain("NATE");
-    expect(el.textContent).toContain("Sign purchase_share");
+    expect(el.textContent).toContain("purchase_share");
   });
 
   it("deposit panel previews tier routing", async () => {
     const { el } = await mountedWithState("deposit");
     expect(el.textContent).toContain("Deposit revenue");
     expect(el.textContent).toContain("WHERE THIS DEPOSIT LANDS");
-    expect(el.textContent).toContain("Sign deposit_revenue");
+    expect(el.textContent).toContain("deposit_revenue");
   });
 
   it("claim panel shows claimable after a deposit", async () => {

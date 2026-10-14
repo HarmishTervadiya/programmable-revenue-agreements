@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
 import { useWorld } from "@/app/providers";
 import { Lockup, Mark } from "@/components/ui/logo";
-import { Chip } from "@/components/ui/chip";
 import { ToastHost } from "@/components/ui/toast";
-import { useProtocol, SCENARIOS, fmtDuration } from "@/protocol";
+import { WalletButton } from "@/components/ui/wallet-button";
+import { NetworkBanner } from "@/components/ui/network-banner";
+import { useProtocol, SCENARIOS } from "@/protocol";
 
 /**
- * Start screen (`/a/demo`): pick a scenario, open the workspace.
+ * Start screen (`/a/demo`): pick a template, open the workspace.
  * One decision, two cards, no forms.
  */
 export function StartScreen() {
@@ -14,16 +15,14 @@ export function StartScreen() {
   const client = useProtocol();
 
   return (
-    <div className="theme-light min-h-screen bg-[var(--bg-page)] text-primary">
-      <header className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-6">
-        <Link to="/a/demo" aria-label="PRA home">
+    <div className="theme-light min-h-dvh bg-[var(--bg-page)] text-primary">
+      <header className="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-6 py-6">
+        <Link to="/" aria-label="PRA home">
           <Lockup />
         </Link>
         <div className="flex items-center gap-3">
-          <Chip>{client.mode === "mock" ? "MOCK" : "DEVNET"}</Chip>
-          <span className="mono-label hidden text-xs text-secondary sm:inline">
-            ← → STEPS · 1-4 ACT AS · ? HELP
-          </span>
+          <NetworkBanner className="hidden lg:flex" />
+          <WalletButton compact />
         </div>
       </header>
 
@@ -42,10 +41,14 @@ export function StartScreen() {
             <span className="text-accent">follow the money.</span>
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-secondary">
-            Pick a scenario. Walk six steps from creation to wind-down with a
-            wallet per persona, a live event log, and every rule the program
-            enforces — in the browser.
+            Pick a template. Walk six steps from creation to close with your wallet on Solana
+            devnet — a live agreement, every rule the program enforces.
           </p>
+          {client.mode === "devnet" && (
+            <p className="mono-label mt-3 text-xs text-secondary">
+              WALLET SIGN-IN ONLY · NO EMAIL · NO PASSWORD
+            </p>
+          )}
         </div>
 
         <div className="mt-12 grid gap-5 md:grid-cols-2">
@@ -76,8 +79,7 @@ export function StartScreen() {
         </div>
 
         <p className="mono-label mt-10 text-xs text-secondary">
-          CLOCK JUMPS UP TO {fmtDuration(3 * 365 * 86_400)} · CLAIM WINDOWS DRAIN ·
-          ERRORS EXPLAIN THEMSELVES
+          LIVE ON SOLANA DEVNET · REAL TRANSACTIONS, REAL FEES · ERRORS EXPLAIN THEMSELVES
         </p>
       </main>
       <ToastHost />

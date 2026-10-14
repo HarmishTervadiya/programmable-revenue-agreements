@@ -14,9 +14,11 @@
   --accent: var(--color-purple-500);
   --holders-share: var(--color-purple-500);
   --creator-share: var(--color-coral-500);
-  --healthy: var(--color-mint-700);
+  /* Text-role greens/reds are darkened past the brand ramp so small text
+     keeps ≥4.5:1 on white (UI-UX-RULES §3). Fills/dots keep the bright ramp. */
+  --healthy: #0c7c5e;
   --warning: var(--color-amber-500);
-  --danger: var(--color-red-500);
+  --danger: #d61f36;
   color-scheme: light;
 }
 
